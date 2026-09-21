@@ -10,6 +10,8 @@ const { recommendModels } = require('../shared/recommender');
 let mainWindow;
 let configStore;
 let currentConfig;
+let operationActive = false;
+let networkActivity = { externalAccess: false, label: '' };
 
 function isLocalRequest(urlString) {
   try {
@@ -31,6 +33,31 @@ function applyNetworkPolicy() {
   });
 }
 
+function sendProgress(kind, update) {
+  mainWindow?.webContents.send('models:progress', { kind, ...update });
+}
+
+function sendNetworkActivity(externalAccess, label = '') {
+  networkActivity = { externalAccess, label };
+  mainWindow?.webContents.send('network:activity', {
+    externalAccess,
+    offlineStrict: currentConfig.offlineStrict,
+    label,
+  });
+}
+
+async function runExclusive(action) {
+  if (operationActive) {
+    throw new Error('Já existe uma operação de modelo em andamento.');
+  }
+  operationActive = true;
+  try {
+    return await action();
+  } finally {
+    operationActive = false;
+  }
+}
+
 async function getState() {
   const [hardware, status] = await Promise.all([
     getHardwareInfo(),
@@ -49,6 +76,7 @@ async function getState() {
     hardware,
     ollama: { ...status, installedModels },
     recommendations: recommendModels(currentConfig),
+    networkActivity,
   };
 }
 
@@ -66,6 +94,20 @@ function registerIpc() {
   ipcMain.handle('ollama:chat', async (_event, payload) => {
     return ollama.chat({ ...payload, settings: currentConfig });
   });
+  ipcMain.handle('models:pull', async (_event, model) => runExclusive(async () => {
+    sendNetworkActivity(true, 'Baixando modelo');
+    try {
+      return await ollama.pullModel(model, (update) => sendProgress('pull', update));
+    } finally {
+      sendNetworkActivity(false, 'Download finalizado');
+    }
+  }));
+  ipcMain.handle('models:delete', async (_event, model) => {
+    return runExclusive(() => ollama.deleteModel(model));
+  });
+  ipcMain.handle('training:create', async (_event, payload) => runExclusive(() => {
+    return ollama.createCustomModel(payload, (update) => sendProgress('create', update));
+  }));
 }
 
 function createWindow() {

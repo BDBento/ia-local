@@ -6,19 +6,30 @@ const state = {
   ollama: null,
   recommendations: [],
   messages: [],
+  externalAccess: false,
 };
 
 const byId = (id) => document.getElementById(id);
-const pageTitles = { chat: 'Conversa local', models: 'Modelos recomendados', settings: 'Configurações' };
+const pageTitles = { chat: 'Conversa local', models: 'Gerenciar modelos', training: 'Laboratório', settings: 'Configurações' };
 
-function setBeacon(mode) {
+function setBeacon(mode, customLabel = '') {
   const beacon = byId('privacy-beacon');
   beacon.className = `privacy-beacon ${mode}`;
-  byId('beacon-label').textContent = mode === 'offline'
+  byId('beacon-label').textContent = customLabel || (mode === 'offline'
     ? 'Offline protegido'
     : mode === 'online'
       ? 'Internet permitida'
-      : 'Verificando';
+      : 'Verificando');
+}
+
+function syncBeacon() {
+  const activity = state.networkActivity || {};
+  state.externalAccess = Boolean(activity.externalAccess);
+  if (state.externalAccess) {
+    setBeacon('online', activity.label || 'Internet em uso');
+  } else {
+    setBeacon(state.config.offlineStrict ? 'offline' : 'online');
+  }
 }
 
 function switchView(name) {
@@ -57,6 +68,36 @@ function renderModels() {
   `).join('');
 }
 
+function formatBytes(bytes) {
+  const value = Number(bytes) || 0;
+  if (!value) return 'Tamanho não informado';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const unit = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+  return `${(value / (1024 ** unit)).toFixed(unit > 2 ? 1 : 0)} ${units[unit]}`;
+}
+
+function renderInstalledModels() {
+  const installed = state.ollama.installedModels || [];
+  const container = byId('installed-models');
+  container.innerHTML = installed.length
+    ? installed.map((model) => `
+      <div class="installed-item">
+        <div><strong>${escapeHtml(model.name)}</strong><small>${formatBytes(model.size)} · armazenado localmente</small></div>
+        <button class="danger-button" type="button" data-delete-model="${escapeHtml(model.name)}">Excluir</button>
+      </div>
+    `).join('')
+    : '<div class="installed-empty">Nenhum modelo local encontrado.</div>';
+
+  const trainingBase = byId('training-base');
+  trainingBase.innerHTML = installed.length
+    ? installed.map((model) => `<option value="${escapeHtml(model.name)}">${escapeHtml(model.name)}</option>`).join('')
+    : '<option value="">Nenhum modelo instalado</option>';
+
+  document.querySelectorAll('[data-delete-model]').forEach((button) => {
+    button.addEventListener('click', () => removeModel(button.dataset.deleteModel));
+  });
+}
+
 function renderOllama() {
   const status = byId('ollama-sidebar-status');
   const select = byId('chat-model');
@@ -70,6 +111,7 @@ function renderOllama() {
   byId('chat-hint').textContent = installed.length
     ? `${installed.length} modelo(s) local(is) disponível(is)`
     : state.ollama.available ? 'Instale um modelo no Ollama' : 'Inicie o Ollama para conversar';
+  renderInstalledModels();
 }
 
 function fillSettings() {
@@ -128,21 +170,81 @@ function applyProfile(profile) {
   document.querySelectorAll('[data-profile]').forEach((button) => button.classList.toggle('active', button.dataset.profile === profile));
 }
 
+function updateOperation(update) {
+  const box = byId('model-operation');
+  box.classList.remove('hidden');
+  const completed = Number(update.completed) || 0;
+  const total = Number(update.total) || 0;
+  const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+  byId('operation-label').textContent = update.kind === 'create' ? 'Criando modelo personalizado' : 'Baixando modelo';
+  byId('operation-percent').textContent = total > 0 ? `${percent}%` : '...';
+  byId('operation-progress').value = percent;
+  byId('operation-detail').textContent = update.status || 'Processando...';
+  if (update.kind === 'create') {
+    byId('training-status').textContent = update.status || 'Criando modelo...';
+  }
+}
+
 async function refreshState() {
   setBeacon('checking');
   const next = await window.farolIA.refreshOllama();
   Object.assign(state, next);
-  setBeacon(state.config.offlineStrict ? 'offline' : 'online');
   renderHardware();
   renderModels();
   renderOllama();
   fillSettings();
+  syncBeacon();
+}
+
+async function removeModel(model) {
+  if (!window.confirm(`Excluir o modelo local "${model}"? Esta ação libera o espaço ocupado no disco.`)) return;
+  try {
+    await window.farolIA.deleteModel(model);
+    await refreshState();
+  } catch (error) {
+    window.alert(error.message || 'Não foi possível excluir o modelo.');
+  }
 }
 
 document.querySelectorAll('.nav-button').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
 byId('privacy-beacon').addEventListener('click', () => switchView('settings'));
 byId('refresh-models').addEventListener('click', refreshState);
+byId('refresh-installed').addEventListener('click', refreshState);
 byId('detect-hardware').addEventListener('click', refreshState);
+
+document.querySelectorAll('[data-quick-model]').forEach((button) => {
+  button.addEventListener('click', () => {
+    byId('pull-model-name').value = button.dataset.quickModel;
+    byId('pull-model-name').focus();
+  });
+});
+
+byId('pull-model-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const model = byId('pull-model-name').value.trim();
+  const button = byId('pull-model-button');
+  if (!model) return;
+  if (!state.ollama.available) {
+    window.alert('Inicie o Ollama antes de baixar um modelo.');
+    return;
+  }
+  button.disabled = true;
+  byId('model-operation').classList.remove('hidden');
+  byId('operation-label').textContent = 'Preparando download';
+  byId('operation-detail').textContent = model;
+  try {
+    await window.farolIA.pullModel(model);
+    byId('operation-label').textContent = 'Download concluído';
+    byId('operation-percent').textContent = '100%';
+    byId('operation-progress').value = 100;
+    await refreshState();
+  } catch (error) {
+    byId('operation-label').textContent = 'Falha no download';
+    byId('operation-detail').textContent = error.message || 'Não foi possível baixar o modelo.';
+  } finally {
+    button.disabled = false;
+  }
+});
 
 document.querySelectorAll('[data-profile]').forEach((button) => button.addEventListener('click', () => applyProfile(button.dataset.profile)));
 
@@ -157,6 +259,29 @@ byId('settings-form').addEventListener('submit', async (event) => {
   setBeacon(state.config.offlineStrict ? 'offline' : 'online');
   byId('save-status').textContent = 'Configurações salvas';
   setTimeout(() => { byId('save-status').textContent = ''; }, 2500);
+});
+
+byId('training-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = byId('training-submit');
+  button.disabled = true;
+  byId('training-status').textContent = 'Criando modelo local...';
+  try {
+    const result = await window.farolIA.createCustomModel({
+      base: byId('training-base').value,
+      model: byId('training-name').value.trim(),
+      temperature: Number(byId('training-temperature').value),
+      system: byId('training-system').value,
+      exampleUser: byId('training-example-user').value,
+      exampleAssistant: byId('training-example-assistant').value,
+    });
+    byId('training-status').textContent = `${result.model} criado com sucesso.`;
+    await refreshState();
+  } catch (error) {
+    byId('training-status').textContent = error.message || 'Não foi possível criar o modelo.';
+  } finally {
+    button.disabled = false;
+  }
 });
 
 byId('chat-form').addEventListener('submit', async (event) => {
@@ -187,12 +312,24 @@ byId('chat-form').addEventListener('submit', async (event) => {
   }
 });
 
-window.farolIA.onNetworkPolicy(({ offlineStrict }) => setBeacon(offlineStrict ? 'offline' : 'online'));
+window.farolIA.onNetworkPolicy(({ offlineStrict }) => {
+  if (!state.externalAccess) setBeacon(offlineStrict ? 'offline' : 'online');
+});
+window.farolIA.onNetworkActivity(({ externalAccess, offlineStrict, label }) => {
+  state.externalAccess = externalAccess;
+  state.networkActivity = { externalAccess, label };
+  if (externalAccess) {
+    setBeacon('online', label || 'Internet em uso');
+  } else {
+    setBeacon(offlineStrict ? 'offline' : 'online');
+  }
+});
+window.farolIA.onModelProgress(updateOperation);
 
 (async () => {
   try {
     Object.assign(state, await window.farolIA.getInitialState());
-    setBeacon(state.config.offlineStrict ? 'offline' : 'online');
+    syncBeacon();
     renderHardware();
     renderModels();
     renderOllama();

@@ -21,6 +21,7 @@
         <nav aria-label="Navegação principal">
           <button class="nav-button active" data-view="chat">Conversa</button>
           <button class="nav-button" data-view="models">Modelos</button>
+          <button class="nav-button" data-view="training">Laboratório</button>
           <button class="nav-button" data-view="settings">Configurações</button>
         </nav>
 
@@ -73,6 +74,41 @@
         </section>
 
         <section id="view-models" class="view" aria-labelledby="page-title">
+          <article class="panel manager-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">GERENCIADOR LOCAL</p>
+                <h2>Adicionar qualquer modelo Ollama</h2>
+              </div>
+              <span class="info-pill">Download usa internet</span>
+            </div>
+            <p>Digite o nome exato do modelo. Depois do download ele funciona offline e aparece automaticamente no chat.</p>
+            <form id="pull-model-form" class="inline-form">
+              <input id="pull-model-name" type="text" maxlength="192" placeholder="Ex.: dolphin-mistral:7b" required>
+              <button id="pull-model-button" class="primary-button" type="submit">Baixar modelo</button>
+            </form>
+            <div class="quick-models" aria-label="Sugestões rápidas">
+              <button type="button" data-quick-model="dolphin-mistral:7b">Dolphin sem censura</button>
+              <button type="button" data-quick-model="qwen3:8b">Qwen 3 8B</button>
+              <button type="button" data-quick-model="gemma3:4b">Gemma 3 4B</button>
+              <button type="button" data-quick-model="mistral:7b">Mistral 7B</button>
+            </div>
+            <div id="model-operation" class="operation-box hidden" aria-live="polite">
+              <div><strong id="operation-label">Preparando...</strong><span id="operation-percent">0%</span></div>
+              <progress id="operation-progress" max="100" value="0"></progress>
+              <small id="operation-detail"></small>
+            </div>
+          </article>
+
+          <div class="section-heading installed-heading">
+            <div>
+              <p class="eyebrow">NO COMPUTADOR</p>
+              <h2>Modelos instalados</h2>
+            </div>
+            <button id="refresh-installed" class="secondary-button" type="button">Atualizar lista</button>
+          </div>
+          <div id="installed-models" class="installed-list"></div>
+
           <div class="section-heading">
             <div>
               <p class="eyebrow">COMPATIBILIDADE</p>
@@ -82,6 +118,46 @@
           </div>
           <p class="section-description">As recomendações usam os limites escolhidos, o contexto e uma margem de segurança. Um teste real de desempenho será adicionado numa próxima etapa.</p>
           <div id="model-grid" class="model-grid"></div>
+        </section>
+
+        <section id="view-training" class="view" aria-labelledby="page-title">
+          <div class="training-intro">
+            <p class="eyebrow">PERSONALIZAÇÃO LOCAL</p>
+            <h2>Laboratório de comportamento</h2>
+            <p class="section-description">Crie uma variante de um modelo instalado com personalidade, regras e um exemplo de resposta. O processo é offline e não altera os pesos originais.</p>
+          </div>
+          <form id="training-form" class="panel training-form">
+            <div class="notice-card">
+              <strong>Treinamento leve</strong>
+              <span>Esta etapa configura o comportamento por instruções e exemplos. Fine-tuning LoRA/QLoRA será um módulo avançado separado.</span>
+            </div>
+            <div class="field-grid">
+              <label>Modelo-base
+                <select id="training-base" required><option value="">Nenhum modelo instalado</option></select>
+              </label>
+              <label>Nome do novo modelo
+                <input id="training-name" type="text" maxlength="128" placeholder="meu-assistente:v1" required>
+              </label>
+              <label>Temperatura
+                <input id="training-temperature" type="number" min="0" max="2" step="0.1" value="0.7">
+              </label>
+            </div>
+            <label class="full-field">Instrução principal
+              <textarea id="training-system" rows="6" maxlength="20000" placeholder="Descreva a personalidade, o idioma, o formato das respostas e as regras do assistente..." required></textarea>
+            </label>
+            <div class="examples-grid">
+              <label>Exemplo de pergunta
+                <textarea id="training-example-user" rows="4" maxlength="10000" placeholder="Como o usuário perguntaria?"></textarea>
+              </label>
+              <label>Exemplo da resposta ideal
+                <textarea id="training-example-assistant" rows="4" maxlength="10000" placeholder="Como o modelo deveria responder?"></textarea>
+              </label>
+            </div>
+            <div class="form-actions">
+              <span id="training-status" role="status"></span>
+              <button id="training-submit" class="primary-button" type="submit">Criar modelo personalizado</button>
+            </div>
+          </form>
         </section>
 
         <section id="view-settings" class="view" aria-labelledby="page-title">
