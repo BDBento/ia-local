@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none';">
+    <title>Farol IA Local</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">F</span>
+          <div>
+            <strong>Farol IA</strong>
+            <small>Local por princípio</small>
+          </div>
+        </div>
+
+        <nav aria-label="Navegação principal">
+          <button class="nav-button active" data-view="chat">Conversa</button>
+          <button class="nav-button" data-view="models">Modelos</button>
+          <button class="nav-button" data-view="settings">Configurações</button>
+        </nav>
+
+        <div class="sidebar-note">
+          <span>Serviço local</span>
+          <strong id="ollama-sidebar-status">Verificando...</strong>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">ASSISTENTE PRIVADO</p>
+            <h1 id="page-title">Conversa local</h1>
+          </div>
+
+          <button id="privacy-beacon" class="privacy-beacon checking" type="button" aria-live="polite" title="Abrir configurações de privacidade">
+            <span class="beacon-light" aria-hidden="true"></span>
+            <span>
+              <small>Estado da IA</small>
+              <strong id="beacon-label">Verificando</strong>
+            </span>
+          </button>
+        </header>
+
+        <section id="view-chat" class="view active" aria-labelledby="page-title">
+          <div class="chat-layout">
+            <div id="messages" class="messages" aria-live="polite">
+              <div class="welcome-card">
+                <span class="welcome-icon">✦</span>
+                <h2>Sua IA, dentro do seu computador</h2>
+                <p>Escolha um modelo local e comece uma conversa. Nenhuma ferramenta de internet é fornecida ao modelo.</p>
+              </div>
+            </div>
+
+            <form id="chat-form" class="composer">
+              <div class="composer-row">
+                <select id="chat-model" aria-label="Modelo local">
+                  <option value="">Nenhum modelo instalado</option>
+                </select>
+                <button id="refresh-models" class="icon-button" type="button" title="Atualizar modelos">↻</button>
+              </div>
+              <textarea id="chat-input" rows="3" maxlength="50000" placeholder="Escreva sua mensagem..." required></textarea>
+              <div class="composer-footer">
+                <span id="chat-hint">Ollama local necessário</span>
+                <button id="send-button" class="primary-button" type="submit">Enviar</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="view-models" class="view" aria-labelledby="page-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">COMPATIBILIDADE</p>
+              <h2>Modelos recomendados</h2>
+            </div>
+            <span class="info-pill">Estimativa local</span>
+          </div>
+          <p class="section-description">As recomendações usam os limites escolhidos, o contexto e uma margem de segurança. Um teste real de desempenho será adicionado numa próxima etapa.</p>
+          <div id="model-grid" class="model-grid"></div>
+        </section>
+
+        <section id="view-settings" class="view" aria-labelledby="page-title">
+          <form id="settings-form" class="settings-grid">
+            <article class="panel privacy-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">PRIVACIDADE</p>
+                  <h2>Modo offline estrito</h2>
+                </div>
+                <label class="switch">
+                  <input id="offline-strict" type="checkbox">
+                  <span aria-hidden="true"></span>
+                  <span class="sr-only">Ativar modo offline estrito</span>
+                </label>
+              </div>
+              <p>Bloqueia conexões externas originadas pelo aplicativo. O endereço local do Ollama continua permitido.</p>
+              <div class="safety-row"><span>Destino do chat</span><strong>127.0.0.1:11434</strong></div>
+              <div class="safety-row"><span>Pesquisa na internet</span><strong>Não disponível</strong></div>
+            </article>
+
+            <article class="panel hardware-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">HARDWARE DETECTADO</p>
+                  <h2>Este computador</h2>
+                </div>
+                <button id="detect-hardware" class="secondary-button" type="button">Detectar novamente</button>
+              </div>
+              <div id="hardware-summary" class="hardware-summary"></div>
+            </article>
+
+            <article class="panel limits-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">PERFIL DE USO</p>
+                  <h2>Limites do aplicativo</h2>
+                </div>
+              </div>
+
+              <div class="profile-selector" role="group" aria-label="Perfil de desempenho">
+                <button type="button" data-profile="eco">Econômico</button>
+                <button type="button" data-profile="balanced">Equilibrado</button>
+                <button type="button" data-profile="performance">Desempenho</button>
+              </div>
+
+              <div class="field-grid">
+                <label>Limite de RAM (GB)<input id="ram-limit" type="number" min="2" max="1024" step="0.5"></label>
+                <label>Limite de VRAM (GB)<input id="vram-limit" type="number" min="0" max="1024" step="0.5"></label>
+                <label>Threads da CPU<input id="cpu-threads" type="number" min="1" max="256"></label>
+                <label>Contexto<select id="context-size"><option value="2048">2.048 tokens</option><option value="4096">4.096 tokens</option><option value="8192">8.192 tokens</option><option value="16384">16.384 tokens</option><option value="32768">32.768 tokens</option></select></label>
+                <label>GPU<select id="gpu-id"><option value="0">GPU principal</option></select></label>
+                <label>Manter carregado<select id="keep-alive"><option value="0">Descarregar imediatamente</option><option value="5">5 minutos</option><option value="15">15 minutos</option><option value="60">1 hora</option></select></label>
+              </div>
+
+              <label class="checkbox-row"><input id="use-gpu" type="checkbox"><span>Usar aceleração por GPU quando disponível</span></label>
+              <div class="form-actions">
+                <span id="save-status" role="status"></span>
+                <button class="primary-button" type="submit">Salvar configurações</button>
+              </div>
+            </article>
+          </form>
+        </section>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
