@@ -66,6 +66,8 @@ Na versão `0.5.0`, o Guardião está em modo `diagnostic-only`:
 - a autorização vale uma vez e precisa ser usada em até 60 segundos;
 - o token secreto não é salvo na auditoria;
 - o planejador valida a identidade WFP de executáveis sem aplicar regras;
+- o host de serviço implementa os estados de início, execução bloqueada, parada e encerramento;
+- o host se recusa a executar fora do Gerenciador de Serviços;
 - nenhuma regra do Firewall do Windows é modificada.
 
 O planejador WFP já valida executáveis e produz uma impressão da identidade usada pelas camadas ALE. O bloqueio por processo e a autorização temporária ainda dependem da instalação do Guardião como serviço do Windows. A interface atual não garante o isolamento de todo o computador nem do processo separado do Ollama.
@@ -149,6 +151,7 @@ test/                     Testes automatizados
 
 ## Próximas etapas
 
+- criar instalação e remoção explícitas do serviço com UAC;
 - implementar filtros WFP nas camadas ALE usando identidade do aplicativo e sessão dinâmica;
 - exigir autorização humana para acesso externo;
 - conceder permissões temporárias por processo e destino;

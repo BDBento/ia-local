@@ -7,6 +7,28 @@ using Farol.NetworkGuardian;
 const string ProtocolVersion = "2";
 
 var command = args.FirstOrDefault()?.Trim().ToLowerInvariant() ?? "status";
+if (command == "service-self-test")
+{
+    WriteJson(new { protocolVersion = ProtocolVersion, ok = true, service = GuardianServiceHost.SelfTest() });
+    return 0;
+}
+
+if (command == "service-run")
+{
+    var result = GuardianServiceHost.RunDispatcher();
+    if (result != 0)
+    {
+        WriteJson(new
+        {
+            protocolVersion = ProtocolVersion,
+            ok = false,
+            error = "service_dispatcher_failed",
+            win32ErrorCode = result,
+            message = "O processo não foi iniciado pelo Gerenciador de Controle de Serviços. Nenhuma política foi alterada."
+        });
+    }
+    return result == 0 ? 0 : 4;
+}
 if (command == "plan")
 {
     var appIndex = Array.FindIndex(args, value => string.Equals(value, "--app", StringComparison.OrdinalIgnoreCase));
@@ -34,7 +56,7 @@ if (command != "status")
         protocolVersion = ProtocolVersion,
         ok = false,
         error = "unsupported_command",
-        message = "O Guardião ainda não aplica regras WFP; somente status e plan são permitidos."
+        message = "O Guardião ainda não aplica regras WFP; use status, plan ou service-self-test."
     });
     return 2;
 }
@@ -61,6 +83,7 @@ WriteJson(new
         applicationIdentityFiltering = wfp.ExportFound,
         dynamicSessionCleanup = wfp.ExportFound,
         wfpManagementApiAvailable = wfpManagement,
+        serviceHostAvailable = true,
         enforcerReadyForInstallation = false,
         sandboxApiAvailable = sandbox.ExportFound,
         dotnetRuntime = Environment.Version.ToString()
