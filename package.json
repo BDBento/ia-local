@@ -15,5 +15,8 @@
   "engines": {
     "node": ">=22"
   },
-  "private": true
+  "private": true,
+  "dependencies": {
+    "pdfjs-dist": "^6.3.289"
+  }
 }
