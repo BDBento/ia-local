@@ -52,6 +52,9 @@ test('normaliza capacidades informadas pelo componente nativo', () => {
       dynamicSessionCleanup: true,
       wfpManagementApiAvailable: true,
       serviceHostAvailable: true,
+      serviceInstallerAvailable: true,
+      emergencyRemovalAvailable: true,
+      installationRequiresPublishedBinary: true,
       enforcerReadyForInstallation: false,
     },
     policy: { filterState: 'not-installed' },
@@ -61,6 +64,9 @@ test('normaliza capacidades informadas pelo componente nativo', () => {
   assert.equal(status.capabilities.dynamicSessionCleanup, true);
   assert.equal(status.capabilities.wfpManagementApiAvailable, true);
   assert.equal(status.capabilities.serviceHostAvailable, true);
+  assert.equal(status.capabilities.serviceInstallerAvailable, true);
+  assert.equal(status.capabilities.emergencyRemovalAvailable, true);
+  assert.equal(status.capabilities.installationRequiresPublishedBinary, true);
   assert.equal(status.capabilities.enforcerReadyForInstallation, false);
   assert.equal(status.policy.filterState, 'not-installed');
 });

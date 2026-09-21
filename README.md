@@ -2,7 +2,7 @@
 
 Aplicativo desktop para executar e conversar com modelos de inteligência artificial no próprio computador. O projeto prioriza privacidade, funcionamento offline, liberdade para instalar modelos compatíveis com o Ollama e adaptação a máquinas com diferentes quantidades de RAM, VRAM e núcleos de CPU.
 
-> Estado do projeto: versão `0.5.0`, em desenvolvimento. O chat, o gerenciamento de modelos, as recomendações de hardware e a personalização de modelos já funcionam. O acesso da IA ao terminal continua bloqueado até a conclusão do Guardião nativo de rede.
+> Estado do projeto: versão `0.6.0`, em desenvolvimento. O chat, o gerenciamento de modelos, as recomendações de hardware e a personalização de modelos já funcionam. O acesso da IA ao terminal continua bloqueado até a conclusão do Guardião nativo de rede.
 
 ## Recursos implementados
 
@@ -56,7 +56,7 @@ O download inicial de modelos necessita de internet. Conversas com modelos insta
 
 O componente nativo em .NET diagnostica recursos de segurança do Windows, incluindo Windows Filtering Platform (WFP), elevação administrativa e APIs de isolamento.
 
-Na versão `0.5.0`, o Guardião está em modo `diagnostic-only`:
+Na versão `0.6.0`, o Guardião está em modo `diagnostic-only`:
 
 - política segura informada: negar rede por padrão;
 - terminal da IA bloqueado;
@@ -68,6 +68,9 @@ Na versão `0.5.0`, o Guardião está em modo `diagnostic-only`:
 - o planejador valida a identidade WFP de executáveis sem aplicar regras;
 - o host de serviço implementa os estados de início, execução bloqueada, parada e encerramento;
 - o host se recusa a executar fora do Gerenciador de Serviços;
+- o instalador exige elevação, confirmação textual e binário publicado em C:\\Program Files\\Farol IA Local\\Guardian;
+- o serviço é registrado inicialmente em modo manual, sem iniciar e sem instalar filtros;
+- a remoção emergencial pode parar e excluir o serviço;
 - nenhuma regra do Firewall do Windows é modificada.
 
 O planejador WFP já valida executáveis e produz uma impressão da identidade usada pelas camadas ALE. O bloqueio por processo e a autorização temporária ainda dependem da instalação do Guardião como serviço do Windows. A interface atual não garante o isolamento de todo o computador nem do processo separado do Ollama.

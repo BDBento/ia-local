@@ -7,6 +7,37 @@ using Farol.NetworkGuardian;
 const string ProtocolVersion = "2";
 
 var command = args.FirstOrDefault()?.Trim().ToLowerInvariant() ?? "status";
+if (command == "service-install-plan")
+{
+    WriteJson(new { protocolVersion = ProtocolVersion, ok = true, installation = GuardianServiceInstaller.Plan() });
+    return 0;
+}
+
+if (command is "service-install" or "service-uninstall")
+{
+    var confirmationIndex = Array.FindIndex(args, value => string.Equals(value, "--confirm", StringComparison.OrdinalIgnoreCase));
+    var confirmation = confirmationIndex >= 0 && confirmationIndex + 1 < args.Length ? args[confirmationIndex + 1] : string.Empty;
+    try
+    {
+        var result = command == "service-install"
+            ? GuardianServiceInstaller.Install(confirmation)
+            : GuardianServiceInstaller.Uninstall(confirmation);
+        WriteJson(new { protocolVersion = ProtocolVersion, ok = true, service = result });
+        return 0;
+    }
+    catch (Exception error) when (error is InvalidOperationException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+    {
+        WriteJson(new
+        {
+            protocolVersion = ProtocolVersion,
+            ok = false,
+            error = command == "service-install" ? "service_install_failed" : "service_uninstall_failed",
+            message = error.Message
+        });
+        return 5;
+    }
+}
+
 if (command == "service-self-test")
 {
     WriteJson(new { protocolVersion = ProtocolVersion, ok = true, service = GuardianServiceHost.SelfTest() });
@@ -56,7 +87,7 @@ if (command != "status")
         protocolVersion = ProtocolVersion,
         ok = false,
         error = "unsupported_command",
-        message = "O Guardião ainda não aplica regras WFP; use status, plan ou service-self-test."
+        message = "Comando não reconhecido. Use status, plan, service-install-plan ou service-self-test."
     });
     return 2;
 }
@@ -84,6 +115,9 @@ WriteJson(new
         dynamicSessionCleanup = wfp.ExportFound,
         wfpManagementApiAvailable = wfpManagement,
         serviceHostAvailable = true,
+        serviceInstallerAvailable = true,
+        emergencyRemovalAvailable = true,
+        installationRequiresPublishedBinary = true,
         enforcerReadyForInstallation = false,
         sandboxApiAvailable = sandbox.ExportFound,
         dotnetRuntime = Environment.Version.ToString()

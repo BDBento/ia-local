@@ -136,6 +136,8 @@ function renderGuardian() {
   byId('guardian-service').textContent = guardian.capabilities?.enforcerReadyForInstallation
     ? 'Pronto para instalar'
     : guardian.capabilities?.serviceHostAvailable ? 'Preparado · não instalado' : 'Indisponível';
+  byId('guardian-installer').textContent = guardian.capabilities?.serviceInstallerAvailable ? 'Preparado · travado' : 'Indisponível';
+  byId('guardian-emergency-remove').textContent = guardian.capabilities?.emergencyRemovalAvailable ? 'Disponível' : 'Indisponível';
   byId('guardian-filter-state').textContent = guardian.policy?.filterState === 'active' ? 'Ativos' : 'Não instalados';
   byId('guardian-authorization-mode').textContent = 'Obrigatória';
   byId('guardian-sandbox').textContent = guardian.capabilities?.sandboxApiAvailable ? 'Disponível' : 'Não disponível';
