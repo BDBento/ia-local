@@ -234,6 +234,16 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .guardian-lock-panel h2 { margin: 5px 0; }
 .guardian-lock-panel p { margin-bottom: 0; }
 .lock-badge { padding: 9px 12px; border: 1px solid rgba(255, 107, 103, 0.45); border-radius: 9px; color: var(--red); font-size: 12px; font-weight: 900; letter-spacing: 0.08em; }
+.authorization-panel { margin-top: 18px; }
+.one-use-badge { padding: 7px 10px; border: 1px solid rgba(67, 227, 159, 0.35); border-radius: 999px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: 0.08em; }
+.authorization-history { display: grid; gap: 9px; margin-top: 16px; }
+.authorization-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: #0b1814; }
+.authorization-item strong, .authorization-item small { display: block; }
+.authorization-item small { margin-top: 4px; color: var(--muted); }
+.authorization-status { font-size: 11px; font-weight: 800; white-space: nowrap; }
+.authorization-status.consumed, .authorization-status.approved { color: var(--green); }
+.authorization-status.pending { color: var(--yellow); }
+.authorization-status.denied, .authorization-status.expired { color: var(--red); }
 
 @media (max-width: 1080px) {
   .examples-grid { grid-template-columns: 1fr; }

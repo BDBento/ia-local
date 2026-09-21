@@ -8,6 +8,7 @@ const state = {
   messages: [],
   externalAccess: false,
   guardian: null,
+  authorizations: [],
 };
 
 const byId = (id) => document.getElementById(id);
@@ -134,6 +135,31 @@ function renderGuardian() {
   byId('guardian-build').textContent = guardian.windowsBuild || '—';
 }
 
+function renderAuthorizations() {
+  const container = byId('authorization-history');
+  if (!container) return;
+  const labels = {
+    pending: 'Aguardando decisão',
+    approved: 'Aprovada',
+    denied: 'Negada',
+    consumed: 'Utilizada',
+    expired: 'Expirada',
+  };
+  container.innerHTML = state.authorizations.length
+    ? state.authorizations.map((item) => `
+      <div class="authorization-item">
+        <div><strong>${escapeHtml(item.target)}</strong><small>Download de modelo · ${new Date(item.createdAt).toLocaleString('pt-BR')}</small></div>
+        <span class="authorization-status ${escapeHtml(item.status)}">${escapeHtml(labels[item.status] || item.status)}</span>
+      </div>
+    `).join('')
+    : '<div class="installed-empty">Nenhuma solicitação registrada nesta sessão.</div>';
+}
+
+async function refreshAuthorizations() {
+  state.authorizations = await window.farolIA.getAuthorizations();
+  renderAuthorizations();
+}
+
 function fillSettings() {
   const config = state.config;
   byId('offline-strict').checked = config.offlineStrict;
@@ -238,6 +264,7 @@ byId('refresh-guardian').addEventListener('click', async () => {
   byId('guardian-title').textContent = 'Verificando...';
   try {
     state.guardian = await window.farolIA.getGuardianStatus();
+    await refreshAuthorizations();
     renderGuardian();
   } catch (error) {
     byId('guardian-title').textContent = 'Falha segura';
@@ -267,8 +294,30 @@ byId('pull-model-form').addEventListener('submit', async (event) => {
   byId('model-operation').classList.remove('hidden');
   byId('operation-label').textContent = 'Preparando download';
   byId('operation-detail').textContent = model;
+  let authorization;
   try {
-    await window.farolIA.pullModel(model);
+    authorization = await window.farolIA.requestAuthorization({
+      kind: 'model-download',
+      target: model,
+      reason: 'Baixar um modelo por meio do Ollama requer acesso à internet.',
+    });
+    await refreshAuthorizations();
+    const approved = window.confirm(
+      `AUTORIZAÇÃO DE REDE\n\nOperação: baixar modelo\nDestino lógico: ${model}\nValidade para iniciar: 60 segundos\nUso: uma única vez\n\nAutorizar esta operação externa?`,
+    );
+    if (!approved) {
+      await window.farolIA.decideAuthorization({ id: authorization.id, decision: 'deny' });
+      byId('operation-label').textContent = 'Download cancelado';
+      byId('operation-detail').textContent = 'Acesso externo negado pelo usuário.';
+      await refreshAuthorizations();
+      return;
+    }
+    const grant = await window.farolIA.decideAuthorization({ id: authorization.id, decision: 'approve' });
+    await window.farolIA.pullModel({
+      model,
+      authorizationId: authorization.id,
+      approvalToken: grant.approvalToken,
+    });
     byId('operation-label').textContent = 'Download concluído';
     byId('operation-percent').textContent = '100%';
     byId('operation-progress').value = 100;
@@ -369,6 +418,7 @@ window.farolIA.onModelProgress(updateOperation);
     renderModels();
     renderOllama();
     renderGuardian();
+    await refreshAuthorizations();
     fillSettings();
   } catch (error) {
     setBeacon('online');

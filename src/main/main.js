@@ -6,11 +6,13 @@ const { createConfigStore } = require('./config-store');
 const { getHardwareInfo } = require('./hardware');
 const ollama = require('./ollama');
 const networkGuardian = require('./network-guardian');
+const { createAuthorizationManager } = require('./network-authorization');
 const { recommendModels } = require('../shared/recommender');
 
 let mainWindow;
 let configStore;
 let currentConfig;
+let authorizationManager;
 let operationActive = false;
 let networkActivity = { externalAccess: false, label: '' };
 
@@ -87,6 +89,19 @@ function registerIpc() {
   ipcMain.handle('app:get-initial-state', getState);
   ipcMain.handle('ollama:refresh', getState);
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
+  ipcMain.handle('guardian:authorizations', () => authorizationManager.list());
+  ipcMain.handle('guardian:authorization-request', (_event, input) => {
+    if (input?.kind !== 'model-download') throw new Error('Tipo de autorização não permitido.');
+    const target = ollama.validateModelName(input?.target);
+    return authorizationManager.request({
+      kind: 'model-download',
+      target,
+      reason: 'Baixar um modelo por meio do Ollama requer acesso à internet.',
+    });
+  });
+  ipcMain.handle('guardian:authorization-decision', (_event, input) => {
+    return authorizationManager.decide(input?.id, input?.decision);
+  });
   ipcMain.handle('settings:save', async (_event, input) => {
     currentConfig = await configStore.save(input);
     applyNetworkPolicy();
@@ -98,7 +113,14 @@ function registerIpc() {
   ipcMain.handle('ollama:chat', async (_event, payload) => {
     return ollama.chat({ ...payload, settings: currentConfig });
   });
-  ipcMain.handle('models:pull', async (_event, model) => runExclusive(async () => {
+  ipcMain.handle('models:pull', async (_event, input) => runExclusive(async () => {
+    const model = ollama.validateModelName(input?.model);
+    await authorizationManager.consume({
+      id: input?.authorizationId,
+      approvalToken: input?.approvalToken,
+      kind: 'model-download',
+      target: model,
+    });
     sendNetworkActivity(true, 'Baixando modelo');
     try {
       return await ollama.pullModel(model, (update) => sendProgress('pull', update));
@@ -143,6 +165,9 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   configStore = createConfigStore(app.getPath('userData'));
+  authorizationManager = createAuthorizationManager({
+    auditPath: path.join(app.getPath('userData'), 'security-audit.jsonl'),
+  });
   currentConfig = await configStore.load();
   registerIpc();
   createWindow();

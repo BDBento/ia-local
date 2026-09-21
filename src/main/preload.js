@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('farolIA', {
   deleteModel: (model) => ipcRenderer.invoke('models:delete', model),
   createCustomModel: (payload) => ipcRenderer.invoke('training:create', payload),
   getGuardianStatus: () => ipcRenderer.invoke('guardian:status'),
+  getAuthorizations: () => ipcRenderer.invoke('guardian:authorizations'),
+  requestAuthorization: (input) => ipcRenderer.invoke('guardian:authorization-request', input),
+  decideAuthorization: (input) => ipcRenderer.invoke('guardian:authorization-decision', input),
   onNetworkPolicy: (callback) => {
     const listener = (_event, value) => callback(value);
     ipcRenderer.on('network:policy', listener);

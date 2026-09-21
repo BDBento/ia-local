@@ -1,13 +1,13 @@
 {
   "name": "farol-ia-local",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Assistente de IA local com controle de hardware e indicador permanente de privacidade.",
   "main": "src/main/main.js",
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
     "test": "node --test",
-    "check": "node --check src/main/main.js && node --check src/main/preload.js && node --check src/main/network-guardian.js && node --check src/renderer/app.js && node --check src/shared/recommender.js"
+    "check": "node --check src/main/main.js && node --check src/main/preload.js && node --check src/main/network-guardian.js && node --check src/main/network-authorization.js && node --check src/renderer/app.js && node --check src/shared/recommender.js"
   },
   "devDependencies": {
     "electron": "^44.4.3"
