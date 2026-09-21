@@ -5,6 +5,7 @@ const { app, BrowserWindow, ipcMain, session } = require('electron');
 const { createConfigStore } = require('./config-store');
 const { getHardwareInfo } = require('./hardware');
 const ollama = require('./ollama');
+const networkGuardian = require('./network-guardian');
 const { recommendModels } = require('../shared/recommender');
 
 let mainWindow;
@@ -59,9 +60,10 @@ async function runExclusive(action) {
 }
 
 async function getState() {
-  const [hardware, status] = await Promise.all([
+  const [hardware, status, guardian] = await Promise.all([
     getHardwareInfo(),
     ollama.getStatus(),
+    networkGuardian.getStatus(),
   ]);
   let installedModels = [];
   if (status.available) {
@@ -77,12 +79,14 @@ async function getState() {
     ollama: { ...status, installedModels },
     recommendations: recommendModels(currentConfig),
     networkActivity,
+    guardian,
   };
 }
 
 function registerIpc() {
   ipcMain.handle('app:get-initial-state', getState);
   ipcMain.handle('ollama:refresh', getState);
+  ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('settings:save', async (_event, input) => {
     currentConfig = await configStore.save(input);
     applyNetworkPolicy();

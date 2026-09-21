@@ -7,10 +7,12 @@ const state = {
   recommendations: [],
   messages: [],
   externalAccess: false,
+  guardian: null,
 };
 
 const byId = (id) => document.getElementById(id);
 const pageTitles = { chat: 'Conversa local', models: 'Gerenciar modelos', training: 'Laboratório', settings: 'Configurações' };
+pageTitles.guardian = 'Guardião de rede';
 
 function setBeacon(mode, customLabel = '') {
   const beacon = byId('privacy-beacon');
@@ -114,6 +116,24 @@ function renderOllama() {
   renderInstalledModels();
 }
 
+function renderGuardian() {
+  const guardian = state.guardian;
+  if (!guardian) return;
+  const enforcement = guardian.policy?.enforcement || 'unavailable';
+  const active = enforcement === 'active';
+  const diagnostic = enforcement === 'diagnostic-only';
+  byId('guardian-light').className = `guardian-light ${active ? 'ready' : 'blocked'}`;
+  byId('guardian-title').textContent = active ? 'Proteção ativa' : diagnostic ? 'Diagnóstico concluído' : 'Guardião indisponível';
+  byId('guardian-message').textContent = guardian.message;
+  byId('guardian-default-policy').textContent = 'Negar rede';
+  byId('guardian-terminal').textContent = guardian.policy?.terminalEnabled ? 'Disponível' : 'Bloqueado';
+  byId('guardian-external').textContent = guardian.policy?.externalAccess ? 'Autorizado' : 'Bloqueado';
+  byId('guardian-wfp').textContent = guardian.capabilities?.wfpAvailable ? 'Disponível' : 'Indisponível';
+  byId('guardian-sandbox').textContent = guardian.capabilities?.sandboxApiAvailable ? 'Disponível' : 'Não disponível';
+  byId('guardian-elevated').textContent = guardian.elevated ? 'Sim' : 'Não';
+  byId('guardian-build').textContent = guardian.windowsBuild || '—';
+}
+
 function fillSettings() {
   const config = state.config;
   byId('offline-strict').checked = config.offlineStrict;
@@ -192,6 +212,7 @@ async function refreshState() {
   renderHardware();
   renderModels();
   renderOllama();
+  renderGuardian();
   fillSettings();
   syncBeacon();
 }
@@ -211,6 +232,20 @@ byId('privacy-beacon').addEventListener('click', () => switchView('settings'));
 byId('refresh-models').addEventListener('click', refreshState);
 byId('refresh-installed').addEventListener('click', refreshState);
 byId('detect-hardware').addEventListener('click', refreshState);
+byId('refresh-guardian').addEventListener('click', async () => {
+  const button = byId('refresh-guardian');
+  button.disabled = true;
+  byId('guardian-title').textContent = 'Verificando...';
+  try {
+    state.guardian = await window.farolIA.getGuardianStatus();
+    renderGuardian();
+  } catch (error) {
+    byId('guardian-title').textContent = 'Falha segura';
+    byId('guardian-message').textContent = error.message || 'Não foi possível consultar o Guardião.';
+  } finally {
+    button.disabled = false;
+  }
+});
 
 document.querySelectorAll('[data-quick-model]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -333,6 +368,7 @@ window.farolIA.onModelProgress(updateOperation);
     renderHardware();
     renderModels();
     renderOllama();
+    renderGuardian();
     fillSettings();
   } catch (error) {
     setBeacon('online');

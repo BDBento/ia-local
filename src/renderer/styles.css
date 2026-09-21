@@ -218,8 +218,26 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .examples-grid label { display: grid; gap: 7px; color: var(--muted); font-size: 12px; }
 #training-status { color: var(--green); font-size: 12px; }
 
+.guardian-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; margin: 24px 0 18px; }
+.guardian-status-panel { border-color: rgba(244, 189, 80, 0.32); }
+.guardian-state { display: flex; align-items: center; gap: 14px; }
+.guardian-state small { color: var(--muted); font-size: 10px; letter-spacing: 0.12em; }
+.guardian-state h3 { margin: 4px 0 0; font-size: 21px; }
+.guardian-light { width: 18px; height: 18px; flex: 0 0 auto; border-radius: 50%; }
+.guardian-light.blocked { background: var(--yellow); box-shadow: 0 0 19px var(--yellow); }
+.guardian-light.ready { background: var(--green); box-shadow: 0 0 19px var(--green); }
+.capability-list { display: grid; margin-top: 18px; }
+.capability-list div { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid var(--line); }
+.capability-list span { color: var(--muted); }
+.capability-list strong { text-align: right; }
+.guardian-lock-panel { display: flex; align-items: center; justify-content: space-between; gap: 22px; border-color: rgba(255, 107, 103, 0.25); }
+.guardian-lock-panel h2 { margin: 5px 0; }
+.guardian-lock-panel p { margin-bottom: 0; }
+.lock-badge { padding: 9px 12px; border: 1px solid rgba(255, 107, 103, 0.45); border-radius: 9px; color: var(--red); font-size: 12px; font-weight: 900; letter-spacing: 0.08em; }
+
 @media (max-width: 1080px) {
   .examples-grid { grid-template-columns: 1fr; }
+  .guardian-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 1000px) {

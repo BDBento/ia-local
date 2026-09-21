@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('farolIA', {
   pullModel: (model) => ipcRenderer.invoke('models:pull', model),
   deleteModel: (model) => ipcRenderer.invoke('models:delete', model),
   createCustomModel: (payload) => ipcRenderer.invoke('training:create', payload),
+  getGuardianStatus: () => ipcRenderer.invoke('guardian:status'),
   onNetworkPolicy: (callback) => {
     const listener = (_event, value) => callback(value);
     ipcRenderer.on('network:policy', listener);

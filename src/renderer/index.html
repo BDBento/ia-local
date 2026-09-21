@@ -22,6 +22,7 @@
           <button class="nav-button active" data-view="chat">Conversa</button>
           <button class="nav-button" data-view="models">Modelos</button>
           <button class="nav-button" data-view="training">Laboratório</button>
+          <button class="nav-button" data-view="guardian">Guardião</button>
           <button class="nav-button" data-view="settings">Configurações</button>
         </nav>
 
@@ -158,6 +159,53 @@
               <button id="training-submit" class="primary-button" type="submit">Criar modelo personalizado</button>
             </div>
           </form>
+        </section>
+
+        <section id="view-guardian" class="view" aria-labelledby="page-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">CONTROLE DE REDE</p>
+              <h2>Guardião do sistema</h2>
+            </div>
+            <button id="refresh-guardian" class="secondary-button" type="button">Executar diagnóstico</button>
+          </div>
+          <p class="section-description">Esta camada decide se ferramentas iniciadas pela IA podem usar terminal ou rede. Na dúvida ou em caso de falha, o acesso permanece bloqueado.</p>
+
+          <div class="guardian-grid">
+            <article class="panel guardian-status-panel">
+              <div class="guardian-state">
+                <span id="guardian-light" class="guardian-light blocked" aria-hidden="true"></span>
+                <div>
+                  <small>ESTADO DO ENFORCEMENT</small>
+                  <h3 id="guardian-title">Verificando...</h3>
+                </div>
+              </div>
+              <p id="guardian-message">Consultando o componente nativo.</p>
+              <div class="safety-row"><span>Política padrão</span><strong id="guardian-default-policy">Negar rede</strong></div>
+              <div class="safety-row"><span>Terminal da IA</span><strong id="guardian-terminal">Bloqueado</strong></div>
+              <div class="safety-row"><span>Acesso externo</span><strong id="guardian-external">Bloqueado</strong></div>
+            </article>
+
+            <article class="panel">
+              <p class="eyebrow">CAPACIDADES DO WINDOWS</p>
+              <h2>Diagnóstico nativo</h2>
+              <div class="capability-list">
+                <div><span>Windows Filtering Platform</span><strong id="guardian-wfp">Verificando</strong></div>
+                <div><span>API Process Sandbox</span><strong id="guardian-sandbox">Verificando</strong></div>
+                <div><span>Execução elevada</span><strong id="guardian-elevated">Não</strong></div>
+                <div><span>Build do Windows</span><strong id="guardian-build">—</strong></div>
+              </div>
+            </article>
+          </div>
+
+          <article class="panel guardian-lock-panel">
+            <div>
+              <p class="eyebrow">FALHA SEGURA</p>
+              <h2>Terminal permanece desativado</h2>
+              <p>O botão de terminal só será disponibilizado quando o enforcer WFP estiver instalado, ativo e aprovado nos testes de bloqueio. O modelo não pode modificar esse estado.</p>
+            </div>
+            <span class="lock-badge">BLOQUEADO</span>
+          </article>
         </section>
 
         <section id="view-settings" class="view" aria-labelledby="page-title">

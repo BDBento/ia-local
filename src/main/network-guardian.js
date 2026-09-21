@@ -1,0 +1,81 @@
+'use strict';
+
+const path = require('node:path');
+const fs = require('node:fs');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+
+const execFileAsync = promisify(execFile);
+
+const SAFE_FALLBACK = Object.freeze({
+  available: false,
+  protocolVersion: '1',
+  platform: process.platform,
+  elevated: false,
+  capabilities: {
+    wfpAvailable: false,
+    sandboxApiAvailable: false,
+  },
+  policy: {
+    defaultNetwork: 'deny',
+    terminalEnabled: false,
+    enforcement: 'unavailable',
+    externalAccess: false,
+  },
+  message: 'Guardião nativo indisponível. Terminal bloqueado por falha segura.',
+});
+
+function guardianDllPath() {
+  return path.resolve(
+    __dirname,
+    '..',
+    '..',
+    'native',
+    'Farol.NetworkGuardian',
+    'bin',
+    'Release',
+    'net9.0-windows',
+    'Farol.NetworkGuardian.dll',
+  );
+}
+
+function normalizeStatus(input) {
+  const policy = input?.policy || {};
+  return {
+    available: Boolean(input?.ok),
+    protocolVersion: String(input?.protocolVersion || 'unknown'),
+    platform: String(input?.platform || process.platform),
+    windowsBuild: Number(input?.windowsBuild) || null,
+    elevated: Boolean(input?.elevated),
+    capabilities: {
+      wfpAvailable: Boolean(input?.capabilities?.wfpAvailable),
+      sandboxApiAvailable: Boolean(input?.capabilities?.sandboxApiAvailable),
+    },
+    policy: {
+      defaultNetwork: 'deny',
+      terminalEnabled: policy.terminalEnabled === true && policy.enforcement === 'active',
+      enforcement: String(policy.enforcement || 'unavailable'),
+      externalAccess: Boolean(policy.externalAccess),
+    },
+    message: String(input?.message || SAFE_FALLBACK.message).slice(0, 500),
+  };
+}
+
+async function getStatus() {
+  const dllPath = guardianDllPath();
+  if (!fs.existsSync(dllPath)) {
+    return { ...SAFE_FALLBACK, message: 'Guardião nativo ainda não foi compilado. Terminal bloqueado.' };
+  }
+  try {
+    const { stdout } = await execFileAsync('dotnet', [dllPath, 'status'], {
+      windowsHide: true,
+      timeout: 5000,
+      maxBuffer: 1024 * 1024,
+    });
+    return normalizeStatus(JSON.parse(stdout));
+  } catch {
+    return { ...SAFE_FALLBACK };
+  }
+}
+
+module.exports = { SAFE_FALLBACK, getStatus, guardianDllPath, normalizeStatus };
