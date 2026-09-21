@@ -1,6 +1,6 @@
 {
   "name": "farol-ia-local",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Assistente de IA local com controle de hardware e indicador permanente de privacidade.",
   "main": "src/main/main.js",
   "type": "commonjs",

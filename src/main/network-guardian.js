@@ -18,6 +18,8 @@ const SAFE_FALLBACK = Object.freeze({
     wfpEngineErrorCode: null,
     applicationIdentityFiltering: false,
     dynamicSessionCleanup: false,
+    wfpManagementApiAvailable: false,
+    enforcerReadyForInstallation: false,
     sandboxApiAvailable: false,
   },
   policy: {
@@ -25,6 +27,7 @@ const SAFE_FALLBACK = Object.freeze({
     terminalEnabled: false,
     enforcement: 'unavailable',
     authorizationMode: 'human-required',
+    filterState: 'not-installed',
     externalAccess: false,
   },
   message: 'Guardião nativo indisponível. Terminal bloqueado por falha segura.',
@@ -58,6 +61,8 @@ function normalizeStatus(input) {
       wfpEngineErrorCode: Number(input?.capabilities?.wfpEngineErrorCode) || null,
       applicationIdentityFiltering: Boolean(input?.capabilities?.applicationIdentityFiltering),
       dynamicSessionCleanup: Boolean(input?.capabilities?.dynamicSessionCleanup),
+      wfpManagementApiAvailable: Boolean(input?.capabilities?.wfpManagementApiAvailable),
+      enforcerReadyForInstallation: Boolean(input?.capabilities?.enforcerReadyForInstallation),
       sandboxApiAvailable: Boolean(input?.capabilities?.sandboxApiAvailable),
     },
     policy: {
@@ -65,6 +70,7 @@ function normalizeStatus(input) {
       terminalEnabled: policy.terminalEnabled === true && policy.enforcement === 'active',
       enforcement: String(policy.enforcement || 'unavailable'),
       authorizationMode: 'human-required',
+      filterState: String(policy.filterState || 'not-installed'),
       externalAccess: Boolean(policy.externalAccess),
     },
     message: String(input?.message || SAFE_FALLBACK.message).slice(0, 500),

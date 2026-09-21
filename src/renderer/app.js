@@ -131,7 +131,10 @@ function renderGuardian() {
   byId('guardian-external').textContent = guardian.policy?.externalAccess ? 'Autorizado' : 'Bloqueado';
   byId('guardian-wfp').textContent = guardian.capabilities?.wfpAvailable ? 'Disponível' : 'Indisponível';
   byId('guardian-wfp-engine').textContent = guardian.capabilities?.wfpEngineAccessible ? 'Acessível' : 'Sem acesso';
-  byId('guardian-cleanup').textContent = guardian.capabilities?.dynamicSessionCleanup ? 'Planejada' : 'Indisponível';
+  byId('guardian-cleanup').textContent = guardian.capabilities?.dynamicSessionCleanup ? 'Disponível no WFP' : 'Indisponível';
+  byId('guardian-management-api').textContent = guardian.capabilities?.wfpManagementApiAvailable ? 'Completa' : 'Incompleta';
+  byId('guardian-service').textContent = guardian.capabilities?.enforcerReadyForInstallation ? 'Pronto' : 'Não instalado';
+  byId('guardian-filter-state').textContent = guardian.policy?.filterState === 'active' ? 'Ativos' : 'Não instalados';
   byId('guardian-authorization-mode').textContent = 'Obrigatória';
   byId('guardian-sandbox').textContent = guardian.capabilities?.sandboxApiAvailable ? 'Disponível' : 'Não disponível';
   byId('guardian-elevated').textContent = guardian.elevated ? 'Sim' : 'Não';
