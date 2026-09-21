@@ -2,7 +2,7 @@
 
 Aplicativo desktop para executar e conversar com modelos de inteligência artificial no próprio computador. O projeto prioriza privacidade, funcionamento offline, liberdade para instalar modelos compatíveis com o Ollama e adaptação a máquinas com diferentes quantidades de RAM, VRAM e núcleos de CPU.
 
-> Estado do projeto: versão `0.3.0`, em desenvolvimento. O chat, o gerenciamento de modelos, as recomendações de hardware e a personalização de modelos já funcionam. O acesso da IA ao terminal continua bloqueado até a conclusão do Guardião nativo de rede.
+> Estado do projeto: versão `0.4.0`, em desenvolvimento. O chat, o gerenciamento de modelos, as recomendações de hardware e a personalização de modelos já funcionam. O acesso da IA ao terminal continua bloqueado até a conclusão do Guardião nativo de rede.
 
 ## Recursos implementados
 
@@ -17,6 +17,8 @@ Aplicativo desktop para executar e conversar com modelos de inteligência artifi
 - listagem, progresso de download e exclusão de modelos;
 - laboratório para criar variantes personalizadas;
 - diagnóstico nativo das capacidades de segurança do Windows;
+- autorização humana obrigatória para downloads, com token de uso único e expiração;
+- auditoria local das solicitações, decisões e usos de autorização;
 - configurações armazenadas localmente.
 
 ## Modelos
@@ -54,12 +56,15 @@ O download inicial de modelos necessita de internet. Conversas com modelos insta
 
 O componente nativo em .NET diagnostica recursos de segurança do Windows, incluindo Windows Filtering Platform (WFP), elevação administrativa e APIs de isolamento.
 
-Na versão `0.3.0`, o Guardião está em modo `diagnostic-only`:
+Na versão `0.4.0`, o Guardião está em modo `diagnostic-only`:
 
 - política segura informada: negar rede por padrão;
 - terminal da IA bloqueado;
 - o modelo não pode autorizar a própria rede;
 - falhas no componente mantêm o terminal bloqueado;
+- downloads exigem confirmação explícita para o modelo solicitado;
+- a autorização vale uma vez e precisa ser usada em até 60 segundos;
+- o token secreto não é salvo na auditoria;
 - nenhuma regra do Firewall do Windows é modificada.
 
 O bloqueio nativo por processo e a autorização temporária de rede ainda serão implementados. A interface atual não garante o isolamento de todo o computador nem do processo separado do Ollama.
@@ -124,6 +129,7 @@ Os testes cobrem nomes de modelos, recomendações por RAM e VRAM, modo somente 
 - Navegação externa e novas janelas são recusadas.
 - As mensagens permanecem na memória da sessão atual.
 - As configurações são salvas localmente.
+- Eventos de autorização são acrescentados ao arquivo local security-audit.jsonl.
 - Baixar um modelo exige acesso externo pelo processo do Ollama.
 
 O bloqueio do Electron não controla sozinho outros processos. A proteção completa dependerá do enforcer nativo do Guardião, ainda em desenvolvimento.
@@ -142,7 +148,7 @@ test/                     Testes automatizados
 
 ## Próximas etapas
 
-- implementar o enforcer nativo com WFP;
+- implementar filtros WFP nas camadas ALE usando identidade do aplicativo e sessão dinâmica;
 - exigir autorização humana para acesso externo;
 - conceder permissões temporárias por processo e destino;
 - registrar autorizações e revogações localmente;

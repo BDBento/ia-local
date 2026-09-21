@@ -39,4 +39,20 @@ test('nunca aceita política padrão de rede liberada', () => {
     },
   });
   assert.equal(status.policy.defaultNetwork, 'deny');
+  assert.equal(status.policy.authorizationMode, 'human-required');
+});
+
+test('normaliza capacidades informadas pelo componente nativo', () => {
+  const status = normalizeStatus({
+    ok: true,
+    capabilities: {
+      wfpAvailable: true,
+      wfpEngineAccessible: true,
+      applicationIdentityFiltering: true,
+      dynamicSessionCleanup: true,
+    },
+  });
+  assert.equal(status.capabilities.wfpEngineAccessible, true);
+  assert.equal(status.capabilities.applicationIdentityFiltering, true);
+  assert.equal(status.capabilities.dynamicSessionCleanup, true);
 });

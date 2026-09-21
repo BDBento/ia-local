@@ -191,6 +191,9 @@
               <h2>Diagnóstico nativo</h2>
               <div class="capability-list">
                 <div><span>Windows Filtering Platform</span><strong id="guardian-wfp">Verificando</strong></div>
+                <div><span>Mecanismo WFP</span><strong id="guardian-wfp-engine">Verificando</strong></div>
+                <div><span>Limpeza ao encerrar</span><strong id="guardian-cleanup">Verificando</strong></div>
+                <div><span>Autorização humana</span><strong id="guardian-authorization-mode">Obrigatória</strong></div>
                 <div><span>API Process Sandbox</span><strong id="guardian-sandbox">Verificando</strong></div>
                 <div><span>Execução elevada</span><strong id="guardian-elevated">Não</strong></div>
                 <div><span>Build do Windows</span><strong id="guardian-build">—</strong></div>
@@ -285,6 +288,25 @@
         </section>
       </main>
     </div>
-    <script src="app.js"></script>
+    <dialog id="network-auth-dialog" class="authorization-dialog" aria-labelledby="network-auth-title">
+    <form method="dialog">
+      <p class="eyebrow">AUTORIZAÇÃO EXTERNA</p>
+      <h2 id="network-auth-title">Permitir acesso à internet?</h2>
+      <p id="network-auth-reason" class="section-description"></p>
+      <div class="authorization-details">
+        <div><span>Operação</span><strong>Baixar modelo</strong></div>
+        <div><span>Destino lógico</span><strong id="network-auth-target">—</strong></div>
+        <div><span>Validade para iniciar</span><strong>60 segundos</strong></div>
+        <div><span>Quantidade de usos</span><strong>Uma vez</strong></div>
+      </div>
+      <p class="authorization-warning">O download será feito pelo Ollama. O farol ficará vermelho durante a operação.</p>
+      <div class="dialog-actions">
+        <button class="secondary-button" type="submit" value="deny">Negar</button>
+        <button class="primary-button" type="submit" value="approve">Autorizar uma vez</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
   </body>
 </html>

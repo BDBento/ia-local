@@ -130,6 +130,9 @@ function renderGuardian() {
   byId('guardian-terminal').textContent = guardian.policy?.terminalEnabled ? 'Disponível' : 'Bloqueado';
   byId('guardian-external').textContent = guardian.policy?.externalAccess ? 'Autorizado' : 'Bloqueado';
   byId('guardian-wfp').textContent = guardian.capabilities?.wfpAvailable ? 'Disponível' : 'Indisponível';
+  byId('guardian-wfp-engine').textContent = guardian.capabilities?.wfpEngineAccessible ? 'Acessível' : 'Sem acesso';
+  byId('guardian-cleanup').textContent = guardian.capabilities?.dynamicSessionCleanup ? 'Planejada' : 'Indisponível';
+  byId('guardian-authorization-mode').textContent = 'Obrigatória';
   byId('guardian-sandbox').textContent = guardian.capabilities?.sandboxApiAvailable ? 'Disponível' : 'Não disponível';
   byId('guardian-elevated').textContent = guardian.elevated ? 'Sim' : 'Não';
   byId('guardian-build').textContent = guardian.windowsBuild || '—';
@@ -153,6 +156,17 @@ function renderAuthorizations() {
       </div>
     `).join('')
     : '<div class="installed-empty">Nenhuma solicitação registrada nesta sessão.</div>';
+}
+
+function askNetworkAuthorization(authorization) {
+  const dialog = byId('network-auth-dialog');
+  byId('network-auth-target').textContent = authorization.target;
+  byId('network-auth-reason').textContent = authorization.reason;
+  dialog.returnValue = 'deny';
+  dialog.showModal();
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'approve'), { once: true });
+  });
 }
 
 async function refreshAuthorizations() {
@@ -302,9 +316,8 @@ byId('pull-model-form').addEventListener('submit', async (event) => {
       reason: 'Baixar um modelo por meio do Ollama requer acesso à internet.',
     });
     await refreshAuthorizations();
-    const approved = window.confirm(
-      `AUTORIZAÇÃO DE REDE\n\nOperação: baixar modelo\nDestino lógico: ${model}\nValidade para iniciar: 60 segundos\nUso: uma única vez\n\nAutorizar esta operação externa?`,
-    );
+    const approved = await askNetworkAuthorization(authorization);
+
     if (!approved) {
       await window.farolIA.decideAuthorization({ id: authorization.id, decision: 'deny' });
       byId('operation-label').textContent = 'Download cancelado';

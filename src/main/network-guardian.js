@@ -9,17 +9,22 @@ const execFileAsync = promisify(execFile);
 
 const SAFE_FALLBACK = Object.freeze({
   available: false,
-  protocolVersion: '1',
+  protocolVersion: '2',
   platform: process.platform,
   elevated: false,
   capabilities: {
     wfpAvailable: false,
+    wfpEngineAccessible: false,
+    wfpEngineErrorCode: null,
+    applicationIdentityFiltering: false,
+    dynamicSessionCleanup: false,
     sandboxApiAvailable: false,
   },
   policy: {
     defaultNetwork: 'deny',
     terminalEnabled: false,
     enforcement: 'unavailable',
+    authorizationMode: 'human-required',
     externalAccess: false,
   },
   message: 'Guardião nativo indisponível. Terminal bloqueado por falha segura.',
@@ -49,12 +54,17 @@ function normalizeStatus(input) {
     elevated: Boolean(input?.elevated),
     capabilities: {
       wfpAvailable: Boolean(input?.capabilities?.wfpAvailable),
+      wfpEngineAccessible: Boolean(input?.capabilities?.wfpEngineAccessible),
+      wfpEngineErrorCode: Number(input?.capabilities?.wfpEngineErrorCode) || null,
+      applicationIdentityFiltering: Boolean(input?.capabilities?.applicationIdentityFiltering),
+      dynamicSessionCleanup: Boolean(input?.capabilities?.dynamicSessionCleanup),
       sandboxApiAvailable: Boolean(input?.capabilities?.sandboxApiAvailable),
     },
     policy: {
       defaultNetwork: 'deny',
       terminalEnabled: policy.terminalEnabled === true && policy.enforcement === 'active',
       enforcement: String(policy.enforcement || 'unavailable'),
+      authorizationMode: 'human-required',
       externalAccess: Boolean(policy.externalAccess),
     },
     message: String(input?.message || SAFE_FALLBACK.message).slice(0, 500),
