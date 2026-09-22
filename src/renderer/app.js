@@ -14,10 +14,11 @@ const state = {
   activeConversationTitle: '',
   vscodeProjectPath: '',
   conversationStoragePath: '',
+  knowledge: [],
 };
 
 const byId = (id) => document.getElementById(id);
-const pageTitles = { chat: 'Conversa local', models: 'Gerenciar modelos', training: 'Laboratório', settings: 'Configurações' };
+const pageTitles = { chat: 'Conversa local', models: 'Gerenciar modelos', knowledge: 'Biblioteca de PDFs', training: 'Laboratório', settings: 'Configurações' };
 pageTitles.guardian = 'Guardião de rede';
 
 function setBeacon(mode, customLabel = '') {
@@ -119,6 +120,33 @@ function renderInstalledModels() {
 
   document.querySelectorAll('[data-delete-model]').forEach((button) => {
     button.addEventListener('click', () => removeModel(button.dataset.deleteModel));
+  });
+}
+
+function renderKnowledge() {
+  const documents = state.knowledge || [];
+  const container = byId('knowledge-list');
+  container.innerHTML = documents.length
+    ? documents.map((document) => {
+      const emptyWarning = document.emptyPages
+        ? ` · ${document.emptyPages} página(s) sem texto`
+        : '';
+      return `
+        <article class="knowledge-item">
+          <div class="knowledge-icon" aria-hidden="true">PDF</div>
+          <div class="knowledge-details">
+            <strong>${escapeHtml(document.name)}</strong>
+            <small>${escapeHtml(document.pageCount)} página(s) · ${escapeHtml(document.chunkCount)} trecho(s)${escapeHtml(emptyWarning)}</small>
+            <small>Adicionado em ${new Date(document.importedAt).toLocaleString('pt-BR')} · somente local</small>
+          </div>
+          <button class="danger-button" type="button" data-delete-knowledge="${escapeHtml(document.id)}">Remover</button>
+        </article>
+      `;
+    }).join('')
+    : '<div class="installed-empty">Nenhum PDF adicionado.</div>';
+
+  document.querySelectorAll('[data-delete-knowledge]').forEach((button) => {
+    button.addEventListener('click', () => removeKnowledge(button.dataset.deleteKnowledge));
   });
 }
 
@@ -230,7 +258,16 @@ function renderMessages() {
   }
   container.innerHTML = state.messages
     .filter((message) => message.role !== 'tool' || message.visible)
-    .map((message) => `<div class="message ${message.role}">${escapeHtml(message.content || 'Solicitação de ferramenta')}</div>`).join('');
+    .map((message) => {
+      const uniqueSources = [...new Map((message.sources || []).map((source) => [
+        `${source.documentId}:${source.pageNumber}`,
+        source,
+      ])).values()];
+      const sources = uniqueSources.length
+        ? `<div class="message-sources"><span>Fontes locais:</span>${uniqueSources.map((source) => `<small>${escapeHtml(source.name)} · pág. ${escapeHtml(source.pageNumber)}</small>`).join('')}</div>`
+        : '';
+      return `<div class="message ${message.role}">${escapeHtml(message.content || 'Solicitação de ferramenta')}${sources}</div>`;
+    }).join('');
   requestAnimationFrame(() => {
     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   });
@@ -356,11 +393,11 @@ async function runChatWithTools(model) {
     });
     const toolCalls = Array.isArray(result.toolCalls) ? result.toolCalls : [];
     if (!toolCalls.length) {
-      state.messages.push({ role: 'assistant', content: result.content || 'Resposta vazia.' });
+      state.messages.push({ role: 'assistant', content: result.content || 'Resposta vazia.', sources: result.sources || [] });
       return;
     }
 
-    state.messages.push({ role: 'assistant', content: result.content || '', tool_calls: toolCalls });
+    state.messages.push({ role: 'assistant', content: result.content || '', tool_calls: toolCalls, sources: result.sources || [] });
     for (const call of toolCalls) {
       if (call?.function?.name !== 'run_terminal') {
         state.messages.push({ role: 'tool', tool_name: call?.function?.name || 'unknown', content: 'Ferramenta desconhecida ou não permitida.' });
@@ -438,8 +475,21 @@ async function refreshState() {
   renderModels();
   renderOllama();
   renderGuardian();
+  renderKnowledge();
   fillSettings();
   syncBeacon();
+}
+
+async function removeKnowledge(id) {
+  const document = (state.knowledge || []).find((item) => item.id === id);
+  if (!document || !window.confirm(`Remover "${document.name}" da biblioteca local?`)) return;
+  try {
+    state.knowledge = await window.farolIA.deleteKnowledge(id);
+    renderKnowledge();
+    byId('knowledge-status').textContent = 'Documento removido da biblioteca.';
+  } catch (error) {
+    byId('knowledge-status').textContent = error.message || 'Não foi possível remover o documento.';
+  }
 }
 
 async function removeModel(model) {
@@ -566,6 +616,27 @@ byId('sync-vscode').addEventListener('click', async () => {
 byId('refresh-models').addEventListener('click', refreshState);
 byId('refresh-installed').addEventListener('click', refreshState);
 byId('detect-hardware').addEventListener('click', refreshState);
+byId('add-knowledge-pdf').addEventListener('click', async () => {
+  const button = byId('add-knowledge-pdf');
+  const status = byId('knowledge-status');
+  button.disabled = true;
+  status.textContent = 'Lendo e indexando o PDF localmente...';
+  try {
+    const result = await window.farolIA.addKnowledgePdf();
+    if (result.canceled) {
+      status.textContent = 'Seleção cancelada.';
+      return;
+    }
+    state.knowledge = result.knowledge;
+    renderKnowledge();
+    status.textContent = `${result.document.name} foi adicionado com sucesso.`;
+  } catch (error) {
+    status.textContent = error.message || 'Não foi possível processar o PDF.';
+  } finally {
+    button.disabled = false;
+  }
+});
+
 byId('refresh-guardian').addEventListener('click', async () => {
   const button = byId('refresh-guardian');
   button.disabled = true;
@@ -722,6 +793,7 @@ window.farolIA.onModelProgress(updateOperation);
     renderModels();
     renderOllama();
     renderGuardian();
+    renderKnowledge();
     await refreshAuthorizations();
     await refreshConversations();
     fillSettings();

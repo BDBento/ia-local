@@ -21,6 +21,7 @@
         <nav aria-label="Navegação principal">
           <button class="nav-button active" data-view="chat">Conversa</button>
           <button class="nav-button" data-view="models">Modelos</button>
+          <button class="nav-button" data-view="knowledge">Biblioteca</button>
           <button class="nav-button" data-view="training">Laboratório</button>
           <button class="nav-button" data-view="guardian">Guardião</button>
           <button class="nav-button" data-view="settings">Configurações</button>
@@ -137,6 +138,33 @@
           </div>
           <p class="section-description">As recomendações usam os limites escolhidos, o contexto e uma margem de segurança. Um teste real de desempenho será adicionado numa próxima etapa.</p>
           <div id="model-grid" class="model-grid"></div>
+        </section>
+
+        <section id="view-knowledge" class="view" aria-labelledby="page-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">CONHECIMENTO LOCAL</p>
+              <h2>Biblioteca de PDFs</h2>
+            </div>
+            <span class="info-pill">Processamento offline</span>
+          </div>
+          <p class="section-description">Adicione documentos para a IA consultar durante as conversas. O texto é extraído e indexado neste computador; os pesos do modelo não são alterados.</p>
+
+          <article class="panel knowledge-import-panel">
+            <div>
+              <h3>Aprender sobre um assunto</h3>
+              <p>O Farol procura nos PDFs os trechos relacionados à sua pergunta e pede ao modelo que informe o arquivo e a página usados.</p>
+            </div>
+            <button id="add-knowledge-pdf" class="primary-button" type="button">Adicionar PDF</button>
+          </article>
+          <div class="notice-card knowledge-notice">
+            <strong>Limites de segurança</strong>
+            <span>Até 25 MB e 500 páginas por arquivo. Comandos escritos dentro de PDFs não autorizam internet, terminal ou alterações no computador. PDFs escaneados como imagem precisarão de OCR em uma futura etapa.</span>
+          </div>
+          <p id="knowledge-status" class="knowledge-status" role="status"></p>
+          <div id="knowledge-list" class="knowledge-list" aria-live="polite">
+            <div class="installed-empty">Nenhum PDF adicionado.</div>
+          </div>
         </section>
 
         <section id="view-training" class="view" aria-labelledby="page-title">
@@ -382,7 +410,7 @@
         <div><span>Pasta</span><strong id="terminal-auth-cwd">Pasta pessoal</strong></div>
       </div>
       <pre id="terminal-auth-command" class="command-preview"></pre>
-      <p class="authorization-warning">O comando será executado com as permissões da sua conta do Windows. Confira-o antes de autorizar.</p>
+      <p class="authorization-warning">O comando será executado com as permissões e o acesso de rede da sua conta do Windows. O farol ficará vermelho durante a execução. Confira tudo antes de autorizar.</p>
       <div class="dialog-actions">
         <button class="secondary-button" type="submit" value="deny">Negar</button>
         <button class="primary-button" type="submit" value="approve">Executar uma vez</button>
