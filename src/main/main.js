@@ -103,7 +103,7 @@ function registerIpc() {
   ipcMain.handle('vscode:sync', async (_event, input) => {
     const models = await ollama.listInstalledModels();
     const conversation = input?.conversationId ? await conversationStore.get(input.conversationId) : null;
-    return vscodeIntegration.syncProject({ projectPath: input?.projectPath, models, conversation });
+    return vscodeIntegration.setupVsCode({ projectPath: input?.projectPath, models, conversation });
   });
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('guardian:authorizations', () => authorizationManager.list());

@@ -481,7 +481,9 @@ byId('sync-vscode').addEventListener('click', async () => {
       projectPath: state.vscodeProjectPath,
       conversationId: byId('vscode-conversation').value || null,
     });
-    byId('vscode-sync-status').textContent = `${result.modelCount} modelo(s) sincronizado(s)${result.contextExported ? ' com contexto' : ''}.`;
+    byId('vscode-sync-status').textContent = result.extensionInstalled
+      ? `${result.modelCount} modelo(s) integrados. VS Code aberto com o guia.`
+      : `${result.modelCount} modelo(s) sincronizados. Instale o Continue pelo guia aberto no VS Code.`;
   } catch (error) {
     byId('vscode-sync-status').textContent = error.message || 'Falha ao sincronizar.';
   } finally {

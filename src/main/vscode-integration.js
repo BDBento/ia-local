@@ -2,6 +2,10 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+
+const execFileAsync = promisify(execFile);
 
 function yamlString(value) {
   return JSON.stringify(String(value || ''));
@@ -66,4 +70,33 @@ async function syncProject({ projectPath, models, conversation }) {
   return { projectPath: root, modelCount: models.length, contextExported: Boolean(context) };
 }
 
-module.exports = { buildContinueConfig, buildConversationContext, syncProject };
+async function findVsCodeExecutable(environment = process.env) {
+  const candidates = [
+    environment.LOCALAPPDATA && path.join(environment.LOCALAPPDATA, 'Programs', 'Microsoft VS Code', 'Code.exe'),
+    environment.ProgramFiles && path.join(environment.ProgramFiles, 'Microsoft VS Code', 'Code.exe'),
+    environment['ProgramFiles(x86)'] && path.join(environment['ProgramFiles(x86)'], 'Microsoft VS Code', 'Code.exe'),
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try { await fs.access(candidate); return candidate; } catch {}
+  }
+  throw new Error('VS Code não encontrado. Instale-o ou use a sincronização manual.');
+}
+
+async function setupVsCode({ projectPath, models, conversation, environment }) {
+  const synced = await syncProject({ projectPath, models, conversation });
+  const executable = await findVsCodeExecutable(environment);
+  let extensionInstalled = true;
+  try {
+    await execFileAsync(executable, ['--install-extension', 'Continue.continue', '--force'], {
+      timeout: 2 * 60 * 1000,
+      windowsHide: true,
+    });
+  } catch {
+    extensionInstalled = false;
+  }
+  const guidePath = path.join(synced.projectPath, '.continue', 'FAROL-VSCODE.md');
+  execFile(executable, [synced.projectPath, guidePath], { windowsHide: true }, () => {});
+  return { ...synced, extensionInstalled, vscodeOpened: true };
+}
+
+module.exports = { buildContinueConfig, buildConversationContext, findVsCodeExecutable, setupVsCode, syncProject };
