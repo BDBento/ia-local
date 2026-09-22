@@ -156,8 +156,13 @@ async function chat({ model, messages, settings }) {
 
   const safeMessages = (Array.isArray(messages) ? messages : [])
     .slice(-40)
-    .filter((message) => ['user', 'assistant', 'system'].includes(message.role))
-    .map((message) => ({ role: message.role, content: String(message.content).slice(0, 50000) }));
+    .filter((message) => ['user', 'assistant', 'system', 'tool'].includes(message.role))
+    .map((message) => ({
+      role: message.role,
+      content: String(message.content || '').slice(0, 50000),
+      ...(message.tool_name ? { tool_name: String(message.tool_name).slice(0, 100) } : {}),
+      ...(Array.isArray(message.tool_calls) ? { tool_calls: message.tool_calls.slice(0, 4) } : {}),
+    }));
 
   const options = {
     num_ctx: settings.contextSize,
@@ -175,6 +180,24 @@ async function chat({ model, messages, settings }) {
       stream: false,
       keep_alive: `${settings.keepAliveMinutes}m`,
       options,
+      ...(settings.terminalToolsEnabled ? {
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'run_terminal',
+            description: 'Executa PowerShell no computador do usuário. Use apenas quando o usuário pedir uma ação que precise do terminal. Cada execução exige confirmação humana.',
+            parameters: {
+              type: 'object',
+              required: ['command'],
+              properties: {
+                command: { type: 'string', description: 'Um único comando PowerShell, em uma linha.' },
+                cwd: { type: 'string', description: 'Pasta de trabalho absoluta opcional.' },
+                reason: { type: 'string', description: 'Motivo curto para executar o comando.' },
+              },
+            },
+          },
+        }],
+      } : {}),
     }),
   });
 
@@ -185,6 +208,7 @@ async function chat({ model, messages, settings }) {
   const data = await response.json();
   return {
     content: data.message?.content || '',
+    toolCalls: Array.isArray(data.message?.tool_calls) ? data.message.tool_calls : [],
     metrics: {
       totalDuration: data.total_duration || 0,
       evalCount: data.eval_count || 0,

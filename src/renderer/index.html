@@ -209,8 +209,8 @@
           <article class="panel guardian-lock-panel">
             <div>
               <p class="eyebrow">FALHA SEGURA</p>
-              <h2>Terminal permanece desativado</h2>
-              <p>O botão de terminal só será disponibilizado quando o enforcer WFP estiver instalado, ativo e aprovado nos testes de bloqueio. O modelo não pode modificar esse estado.</p>
+              <h2>Isolamento de rede do terminal indisponível</h2>
+              <p>Comandos locais podem ser habilitados nas Configurações e exigem confirmação individual. Até o enforcer WFP ficar ativo, eles executam com o acesso de rede normal da sua conta do Windows.</p>
             </div>
             <span class="lock-badge">BLOQUEADO</span>
           </article>
@@ -258,6 +258,23 @@
                 <button id="detect-hardware" class="secondary-button" type="button">Detectar novamente</button>
               </div>
               <div id="hardware-summary" class="hardware-summary"></div>
+            </article>
+
+            <article class="panel terminal-settings-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">FERRAMENTAS LOCAIS</p>
+                  <h2>Terminal para a IA</h2>
+                </div>
+                <label class="switch">
+                  <input id="terminal-tools-enabled" type="checkbox">
+                  <span aria-hidden="true"></span>
+                  <span class="sr-only">Permitir que a IA solicite comandos de terminal</span>
+                </label>
+              </div>
+              <p>Permite que modelos compatíveis proponham comandos PowerShell. Nada é executado sem você conferir e autorizar cada comando.</p>
+              <div class="safety-row"><span>Execução automática</span><strong>Não</strong></div>
+              <div class="safety-row"><span>Limite por comando</span><strong>30 segundos</strong></div>
             </article>
 
             <article class="panel limits-panel">
@@ -308,6 +325,23 @@
       <div class="dialog-actions">
         <button class="secondary-button" type="submit" value="deny">Negar</button>
         <button class="primary-button" type="submit" value="approve">Autorizar uma vez</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="terminal-auth-dialog" class="authorization-dialog" aria-labelledby="terminal-auth-title">
+    <form method="dialog">
+      <p class="eyebrow">AUTORIZAÇÃO DE TERMINAL</p>
+      <h2 id="terminal-auth-title">Executar este comando?</h2>
+      <p id="terminal-auth-reason" class="section-description"></p>
+      <div class="authorization-details">
+        <div><span>Pasta</span><strong id="terminal-auth-cwd">Pasta pessoal</strong></div>
+      </div>
+      <pre id="terminal-auth-command" class="command-preview"></pre>
+      <p class="authorization-warning">O comando será executado com as permissões da sua conta do Windows. Confira-o antes de autorizar.</p>
+      <div class="dialog-actions">
+        <button class="secondary-button" type="submit" value="deny">Negar</button>
+        <button class="primary-button" type="submit" value="approve">Executar uma vez</button>
       </div>
     </form>
   </dialog>

@@ -8,6 +8,7 @@ const ollama = require('./ollama');
 const networkGuardian = require('./network-guardian');
 const { createAuthorizationManager } = require('./network-authorization');
 const { recommendModels } = require('../shared/recommender');
+const terminal = require('./terminal');
 
 let mainWindow;
 let configStore;
@@ -91,12 +92,19 @@ function registerIpc() {
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('guardian:authorizations', () => authorizationManager.list());
   ipcMain.handle('guardian:authorization-request', (_event, input) => {
-    if (input?.kind !== 'model-download') throw new Error('Tipo de autorização não permitido.');
-    const target = ollama.validateModelName(input?.target);
+    if (!['model-download', 'terminal-command'].includes(input?.kind)) throw new Error('Tipo de autorização não permitido.');
+    if (input.kind === 'terminal-command' && !currentConfig.terminalToolsEnabled) {
+      throw new Error('As ferramentas de terminal estão desativadas nas configurações.');
+    }
+    const target = input.kind === 'model-download'
+      ? ollama.validateModelName(input?.target)
+      : terminal.validateCommand(input?.target);
     return authorizationManager.request({
-      kind: 'model-download',
+      kind: input.kind,
       target,
-      reason: 'Baixar um modelo por meio do Ollama requer acesso à internet.',
+      reason: input.kind === 'model-download'
+        ? 'Baixar um modelo por meio do Ollama requer acesso à internet.'
+        : String(input?.reason || 'A IA solicitou a execução deste comando local.').slice(0, 300),
     });
   });
   ipcMain.handle('guardian:authorization-decision', (_event, input) => {
@@ -112,6 +120,17 @@ function registerIpc() {
   });
   ipcMain.handle('ollama:chat', async (_event, payload) => {
     return ollama.chat({ ...payload, settings: currentConfig });
+  });
+  ipcMain.handle('terminal:execute', async (_event, input) => {
+    if (!currentConfig.terminalToolsEnabled) throw new Error('As ferramentas de terminal estão desativadas.');
+    const command = terminal.validateCommand(input?.command);
+    await authorizationManager.consume({
+      id: input?.authorizationId,
+      approvalToken: input?.approvalToken,
+      kind: 'terminal-command',
+      target: command,
+    });
+    return terminal.execute({ command, cwd: input?.cwd, fallbackCwd: app.getPath('home') });
   });
   ipcMain.handle('models:pull', async (_event, input) => runExclusive(async () => {
     const model = ollama.validateModelName(input?.model);

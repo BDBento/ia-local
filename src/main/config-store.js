@@ -13,6 +13,7 @@ const DEFAULT_CONFIG = Object.freeze({
   cpuThreads: 4,
   contextSize: 4096,
   keepAliveMinutes: 5,
+  terminalToolsEnabled: false,
 });
 
 function sanitizeConfig(input = {}) {
@@ -30,6 +31,7 @@ function sanitizeConfig(input = {}) {
     cpuThreads: Math.max(1, Number.parseInt(input.cpuThreads, 10) || DEFAULT_CONFIG.cpuThreads),
     contextSize: Math.max(1024, Number.parseInt(input.contextSize, 10) || DEFAULT_CONFIG.contextSize),
     keepAliveMinutes: Math.max(0, Number.parseInt(input.keepAliveMinutes, 10) || 0),
+    terminalToolsEnabled: input.terminalToolsEnabled === true,
   };
 }
 

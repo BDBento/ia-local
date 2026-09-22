@@ -126,6 +126,7 @@ nav { display: grid; gap: 8px; }
 .message.user { align-self: flex-end; background: var(--green-deep); }
 .message.assistant { align-self: flex-start; background: var(--panel-strong); border: 1px solid var(--line); }
 .message.error { align-self: center; color: #ffd3d1; background: rgba(141, 43, 40, 0.35); border: 1px solid rgba(255, 107, 103, 0.5); }
+.message.tool { align-self: flex-start; max-width: 90%; border: 1px solid rgba(244, 189, 80, 0.35); background: rgba(244, 189, 80, 0.08); color: var(--yellow); font-family: Consolas, monospace; font-size: 12px; }
 
 .composer { position: sticky; bottom: 20px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(15, 29, 25, 0.97); box-shadow: var(--shadow); }
 .composer-row, .composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -253,6 +254,7 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .authorization-details span { color: var(--muted); }
 .authorization-details strong { text-align: right; overflow-wrap: anywhere; }
 .authorization-warning { padding: 12px 14px; border-left: 3px solid var(--yellow); border-radius: 8px; background: rgba(244, 189, 80, 0.08); color: var(--yellow); font-size: 12px; line-height: 1.5; }
+.command-preview { max-height: 240px; overflow: auto; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #050b09; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
 @media (max-width: 1080px) {

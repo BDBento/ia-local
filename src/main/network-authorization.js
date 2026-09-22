@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const PENDING_TTL_MS = 2 * 60 * 1000;
 const GRANT_TTL_MS = 60 * 1000;
-const ALLOWED_KINDS = new Set(['model-download']);
+const ALLOWED_KINDS = new Set(['model-download', 'terminal-command']);
 
 function cleanText(value, maxLength) {
   return String(value || '').trim().slice(0, maxLength);
@@ -66,7 +66,7 @@ function createAuthorizationManager({
   async function request(input = {}) {
     expire();
     const kind = cleanText(input.kind, 64);
-    const target = cleanText(input.target, 192);
+    const target = cleanText(input.target, kind === 'terminal-command' ? 4000 : 192);
     const reason = cleanText(input.reason, 300);
     if (!ALLOWED_KINDS.has(kind)) throw new Error('Tipo de autorização não permitido.');
     if (!target) throw new Error('Destino da autorização não informado.');
@@ -115,7 +115,8 @@ function createAuthorizationManager({
     expire();
     const entry = entries.get(cleanText(input.id, 64));
     if (!entry || entry.status !== 'approved') throw new Error('Autorização não aprovada ou expirada.');
-    if (entry.kind !== cleanText(input.kind, 64) || entry.target !== cleanText(input.target, 192)) {
+    const targetLimit = entry.kind === 'terminal-command' ? 4000 : 192;
+    if (entry.kind !== cleanText(input.kind, 64) || entry.target !== cleanText(input.target, targetLimit)) {
       throw new Error('A autorização não corresponde a esta operação.');
     }
     const suppliedHash = crypto.createHash('sha256').update(String(input.approvalToken || '')).digest('hex');

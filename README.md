@@ -2,7 +2,7 @@
 
 Aplicativo desktop para executar e conversar com modelos de inteligência artificial no próprio computador. O projeto prioriza privacidade, funcionamento offline, liberdade para instalar modelos compatíveis com o Ollama e adaptação a máquinas com diferentes quantidades de RAM, VRAM e núcleos de CPU.
 
-> Estado do projeto: versão `0.6.0`, em desenvolvimento. O chat, o gerenciamento de modelos, as recomendações de hardware e a personalização de modelos já funcionam. O acesso da IA ao terminal continua bloqueado até a conclusão do Guardião nativo de rede.
+> Estado do projeto: versão `0.6.0`, em desenvolvimento. O chat, o gerenciamento de modelos, as recomendações de hardware e a personalização de modelos já funcionam. O terminal local é opcional e exige autorização humana para cada comando; o isolamento de rede do terminal ainda depende do Guardião nativo.
 
 ## Recursos implementados
 
@@ -20,6 +20,8 @@ Aplicativo desktop para executar e conversar com modelos de inteligência artifi
 - autorização humana obrigatória para downloads, com token de uso único e expiração;
 - auditoria local das solicitações, decisões e usos de autorização;
 - configurações armazenadas localmente.
+- ferramenta PowerShell opcional para modelos Ollama compatíveis com tool calling;
+- confirmação humana, token de uso único, timeout e limite de saída para cada comando;
 
 ## Modelos
 
@@ -59,7 +61,7 @@ O componente nativo em .NET diagnostica recursos de segurança do Windows, inclu
 Na versão `0.6.0`, o Guardião está em modo `diagnostic-only`:
 
 - política segura informada: negar rede por padrão;
-- terminal da IA bloqueado;
+- terminal isolado por rede bloqueado; execução manual opcional disponível sem essa garantia;
 - o modelo não pode autorizar a própria rede;
 - falhas no componente mantêm o terminal bloqueado;
 - downloads exigem confirmação explícita para o modelo solicitado;
@@ -159,7 +161,7 @@ test/                     Testes automatizados
 - exigir autorização humana para acesso externo;
 - conceder permissões temporárias por processo e destino;
 - registrar autorizações e revogações localmente;
-- liberar o terminal somente após testes de bloqueio e revogação;
+- concluir o isolamento de rede do terminal com testes de bloqueio e revogação;
 - empacotar o aplicativo para outras máquinas Windows;
 - avaliar suporte futuro a LoRA/QLoRA.
 

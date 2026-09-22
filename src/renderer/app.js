@@ -127,7 +127,9 @@ function renderGuardian() {
   byId('guardian-title').textContent = active ? 'Proteção ativa' : diagnostic ? 'Diagnóstico concluído' : 'Guardião indisponível';
   byId('guardian-message').textContent = guardian.message;
   byId('guardian-default-policy').textContent = 'Negar rede';
-  byId('guardian-terminal').textContent = guardian.policy?.terminalEnabled ? 'Disponível' : 'Bloqueado';
+  byId('guardian-terminal').textContent = state.config?.terminalToolsEnabled
+    ? 'Manual com confirmação'
+    : guardian.policy?.terminalEnabled ? 'Disponível' : 'Bloqueado';
   byId('guardian-external').textContent = guardian.policy?.externalAccess ? 'Autorizado' : 'Bloqueado';
   byId('guardian-wfp').textContent = guardian.capabilities?.wfpAvailable ? 'Disponível' : 'Indisponível';
   byId('guardian-wfp-engine').textContent = guardian.capabilities?.wfpEngineAccessible ? 'Acessível' : 'Sem acesso';
@@ -158,7 +160,7 @@ function renderAuthorizations() {
   container.innerHTML = state.authorizations.length
     ? state.authorizations.map((item) => `
       <div class="authorization-item">
-        <div><strong>${escapeHtml(item.target)}</strong><small>Download de modelo · ${new Date(item.createdAt).toLocaleString('pt-BR')}</small></div>
+        <div><strong>${escapeHtml(item.target)}</strong><small>${item.kind === 'terminal-command' ? 'Comando de terminal' : 'Download de modelo'} · ${new Date(item.createdAt).toLocaleString('pt-BR')}</small></div>
         <span class="authorization-status ${escapeHtml(item.status)}">${escapeHtml(labels[item.status] || item.status)}</span>
       </div>
     `).join('')
@@ -190,13 +192,16 @@ function fillSettings() {
   byId('context-size').value = String(config.contextSize);
   byId('keep-alive').value = String(config.keepAliveMinutes);
   byId('use-gpu').checked = config.useGpu;
+  byId('terminal-tools-enabled').checked = config.terminalToolsEnabled === true;
   document.querySelectorAll('[data-profile]').forEach((button) => button.classList.toggle('active', button.dataset.profile === config.profile));
 }
 
 function renderMessages() {
   const container = byId('messages');
   if (!state.messages.length) return;
-  container.innerHTML = state.messages.map((message) => `<div class="message ${message.role}">${escapeHtml(message.content)}</div>`).join('');
+  container.innerHTML = state.messages
+    .filter((message) => message.role !== 'tool' || message.visible)
+    .map((message) => `<div class="message ${message.role}">${escapeHtml(message.content || 'Solicitação de ferramenta')}</div>`).join('');
   container.scrollTop = container.scrollHeight;
 }
 
@@ -217,7 +222,76 @@ function readSettings() {
     cpuThreads: Number(byId('cpu-threads').value),
     contextSize: Number(byId('context-size').value),
     keepAliveMinutes: Number(byId('keep-alive').value),
+    terminalToolsEnabled: byId('terminal-tools-enabled').checked,
   };
+}
+
+function askTerminalAuthorization({ command, cwd, reason }) {
+  const dialog = byId('terminal-auth-dialog');
+  byId('terminal-auth-command').textContent = command;
+  byId('terminal-auth-cwd').textContent = cwd || 'Pasta pessoal do usuário';
+  byId('terminal-auth-reason').textContent = reason || 'A IA solicitou este comando para concluir sua tarefa.';
+  dialog.returnValue = 'deny';
+  dialog.showModal();
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'approve'), { once: true });
+  });
+}
+
+function toolArguments(toolCall) {
+  const value = toolCall?.function?.arguments;
+  if (value && typeof value === 'object') return value;
+  try { return JSON.parse(value || '{}'); } catch { return {}; }
+}
+
+async function runChatWithTools(model) {
+  for (let round = 0; round < 4; round += 1) {
+    const result = await window.farolIA.sendChat({
+      model,
+      messages: state.messages.filter((message) => message.role !== 'error'),
+    });
+    const toolCalls = Array.isArray(result.toolCalls) ? result.toolCalls : [];
+    if (!toolCalls.length) {
+      state.messages.push({ role: 'assistant', content: result.content || 'Resposta vazia.' });
+      return;
+    }
+
+    state.messages.push({ role: 'assistant', content: result.content || '', tool_calls: toolCalls });
+    for (const call of toolCalls) {
+      if (call?.function?.name !== 'run_terminal') {
+        state.messages.push({ role: 'tool', tool_name: call?.function?.name || 'unknown', content: 'Ferramenta desconhecida ou não permitida.' });
+        continue;
+      }
+      const args = toolArguments(call);
+      const command = String(args.command || '').trim();
+      const request = await window.farolIA.requestAuthorization({
+        kind: 'terminal-command',
+        target: command,
+        reason: String(args.reason || '').slice(0, 300),
+      });
+      const approved = await askTerminalAuthorization({ command, cwd: args.cwd, reason: request.reason });
+      if (!approved) {
+        await window.farolIA.decideAuthorization({ id: request.id, decision: 'deny' });
+        state.messages.push({ role: 'tool', tool_name: 'run_terminal', content: 'Execução negada pelo usuário.' });
+        continue;
+      }
+      const grant = await window.farolIA.decideAuthorization({ id: request.id, decision: 'approve' });
+      const execution = await window.farolIA.executeTerminal({
+        command,
+        cwd: args.cwd,
+        authorizationId: request.id,
+        approvalToken: grant.approvalToken,
+      });
+      const output = [
+        `Pasta: ${execution.cwd}`,
+        `Código de saída: ${execution.exitCode}`,
+        execution.stdout ? `Saída:\n${execution.stdout}` : '',
+        execution.stderr ? `Erros:\n${execution.stderr}` : '',
+      ].filter(Boolean).join('\n');
+      state.messages.push({ role: 'tool', tool_name: 'run_terminal', content: output });
+    }
+  }
+  throw new Error('A IA excedeu o limite de quatro rodadas de ferramentas.');
 }
 
 function applyProfile(profile) {
@@ -402,11 +476,7 @@ byId('chat-form').addEventListener('submit', async (event) => {
   byId('chat-hint').textContent = 'A IA local está respondendo...';
 
   try {
-    const result = await window.farolIA.sendChat({
-      model,
-      messages: state.messages.filter((message) => message.role !== 'error'),
-    });
-    state.messages.push({ role: 'assistant', content: result.content || 'Resposta vazia.' });
+    await runChatWithTools(model);
   } catch (error) {
     state.messages.push({ role: 'error', content: error.message || 'Não foi possível obter uma resposta local.' });
   } finally {

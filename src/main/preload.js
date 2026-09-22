@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('farolIA', {
   getAuthorizations: () => ipcRenderer.invoke('guardian:authorizations'),
   requestAuthorization: (input) => ipcRenderer.invoke('guardian:authorization-request', input),
   decideAuthorization: (input) => ipcRenderer.invoke('guardian:authorization-decision', input),
+  executeTerminal: (input) => ipcRenderer.invoke('terminal:execute', input),
   onNetworkPolicy: (callback) => {
     const listener = (_event, value) => callback(value);
     ipcRenderer.on('network:policy', listener);
