@@ -92,10 +92,10 @@ Para usar os modelos locais no VS Code quando serviços online estiverem indispo
 2. no Farol, abra **Configurações → Sincronizar com VS Code**;
 3. escolha a pasta do projeto;
 4. opcionalmente selecione uma conversa salva como contexto;
-5. clique em **Sincronizar projeto**;
-6. siga as instruções criadas em `.continue/FAROL-VSCODE.md` no projeto escolhido.
+5. clique em **Integrar e abrir no VS Code**;
+6. o Farol tentará instalar o Continue, configurar uma instalação nova e abrir o guia `.continue/FAROL-VSCODE.md`.
 
-O Farol gera uma configuração que aponta para `127.0.0.1:11434` e uma regra de contexto em `.continue/rules`. A integração não envia chaves de API e não substitui silenciosamente configurações globais do Continue.
+O Farol gera uma configuração que aponta para `127.0.0.1:11434` e uma regra de contexto em `.continue/rules`. Se já existir uma configuração global do Continue, ela é preservada e o guia explica como mesclar os modelos.
 
 Para tarefas com arquivos e terminal, use o modo Agent do Continue e mantenha a confirmação de ferramentas ativada.
 

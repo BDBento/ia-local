@@ -60,9 +60,9 @@ async function syncProject({ projectPath, models, conversation }) {
   await fs.writeFile(path.join(continueDir, 'FAROL-VSCODE.md'), [
     '# Farol IA Local no VS Code',
     '',
-    '1. Instale a extensão Continue recomendada pelo VS Code.',
-    '2. Abra o painel Continue e a configuração local.',
-    '3. Use o conteúdo de `.continue/farol-config.yaml` como configuração local do Continue.',
+    '1. O Farol tentou instalar a extensão Continue automaticamente. Se ela não aparecer, aceite a recomendação do VS Code.',
+    '2. Abra o painel Continue. Em uma instalação nova, a configuração local já foi criada automaticamente.',
+    '3. Se você já tinha uma configuração própria, ela foi preservada. Abra a engrenagem de Local Config e acrescente os modelos de `.continue/farol-config.yaml`.',
     '4. Mantenha o Ollama em execução em `127.0.0.1:11434`.',
     '',
     'O contexto sincronizado fica em `.continue/rules/90-farol-context.md` e é carregado pelo projeto.',
@@ -84,7 +84,21 @@ async function findVsCodeExecutable(environment = process.env) {
 
 async function setupVsCode({ projectPath, models, conversation, environment }) {
   const synced = await syncProject({ projectPath, models, conversation });
-  const executable = await findVsCodeExecutable(environment);
+  const runtimeEnvironment = environment || process.env;
+  const executable = await findVsCodeExecutable(runtimeEnvironment);
+  let continueConfigInstalled = false;
+  const userProfile = runtimeEnvironment.USERPROFILE;
+  if (userProfile) {
+    const globalContinueDir = path.join(userProfile, '.continue');
+    const globalConfigPath = path.join(globalContinueDir, 'config.yaml');
+    try {
+      await fs.access(globalConfigPath);
+    } catch {
+      await fs.mkdir(globalContinueDir, { recursive: true });
+      await fs.writeFile(globalConfigPath, buildContinueConfig(models), { encoding: 'utf8', flag: 'wx' });
+      continueConfigInstalled = true;
+    }
+  }
   let extensionInstalled = true;
   try {
     await execFileAsync(executable, ['--install-extension', 'Continue.continue', '--force'], {
@@ -96,7 +110,7 @@ async function setupVsCode({ projectPath, models, conversation, environment }) {
   }
   const guidePath = path.join(synced.projectPath, '.continue', 'FAROL-VSCODE.md');
   execFile(executable, [synced.projectPath, guidePath], { windowsHide: true }, () => {});
-  return { ...synced, extensionInstalled, vscodeOpened: true };
+  return { ...synced, extensionInstalled, continueConfigInstalled, vscodeOpened: true };
 }
 
 module.exports = { buildContinueConfig, buildConversationContext, findVsCodeExecutable, setupVsCode, syncProject };
