@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('farolIA', {
   getConversation: (id) => ipcRenderer.invoke('conversations:get', id),
   saveConversation: (input) => ipcRenderer.invoke('conversations:save', input),
   deleteConversation: (id) => ipcRenderer.invoke('conversations:delete', id),
+  chooseVsCodeProject: () => ipcRenderer.invoke('vscode:choose-project'),
+  syncVsCode: (input) => ipcRenderer.invoke('vscode:sync', input),
   onNetworkPolicy: (callback) => {
     const listener = (_event, value) => callback(value);
     ipcRenderer.on('network:policy', listener);

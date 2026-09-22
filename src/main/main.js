@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('node:path');
-const { app, BrowserWindow, ipcMain, session } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, session } = require('electron');
 const { createConfigStore } = require('./config-store');
 const { getHardwareInfo } = require('./hardware');
 const ollama = require('./ollama');
@@ -10,6 +10,7 @@ const { createAuthorizationManager } = require('./network-authorization');
 const { recommendModels } = require('../shared/recommender');
 const terminal = require('./terminal');
 const { createConversationStore } = require('./conversation-store');
+const vscodeIntegration = require('./vscode-integration');
 
 let mainWindow;
 let configStore;
@@ -95,6 +96,15 @@ function registerIpc() {
   ipcMain.handle('conversations:get', (_event, id) => conversationStore.get(id));
   ipcMain.handle('conversations:save', (_event, input) => conversationStore.save(input));
   ipcMain.handle('conversations:delete', (_event, id) => conversationStore.delete(id));
+  ipcMain.handle('vscode:choose-project', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'], title: 'Escolha o projeto do VS Code' });
+    return result.canceled ? null : result.filePaths[0];
+  });
+  ipcMain.handle('vscode:sync', async (_event, input) => {
+    const models = await ollama.listInstalledModels();
+    const conversation = input?.conversationId ? await conversationStore.get(input.conversationId) : null;
+    return vscodeIntegration.syncProject({ projectPath: input?.projectPath, models, conversation });
+  });
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('guardian:authorizations', () => authorizationManager.list());
   ipcMain.handle('guardian:authorization-request', (_event, input) => {
