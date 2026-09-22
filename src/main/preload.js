@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('farolIA', {
   requestAuthorization: (input) => ipcRenderer.invoke('guardian:authorization-request', input),
   decideAuthorization: (input) => ipcRenderer.invoke('guardian:authorization-decision', input),
   executeTerminal: (input) => ipcRenderer.invoke('terminal:execute', input),
+  listConversations: () => ipcRenderer.invoke('conversations:list'),
+  getConversation: (id) => ipcRenderer.invoke('conversations:get', id),
+  saveConversation: (input) => ipcRenderer.invoke('conversations:save', input),
+  deleteConversation: (id) => ipcRenderer.invoke('conversations:delete', id),
   onNetworkPolicy: (callback) => {
     const listener = (_event, value) => callback(value);
     ipcRenderer.on('network:policy', listener);

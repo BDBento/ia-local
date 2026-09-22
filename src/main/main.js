@@ -9,11 +9,13 @@ const networkGuardian = require('./network-guardian');
 const { createAuthorizationManager } = require('./network-authorization');
 const { recommendModels } = require('../shared/recommender');
 const terminal = require('./terminal');
+const { createConversationStore } = require('./conversation-store');
 
 let mainWindow;
 let configStore;
 let currentConfig;
 let authorizationManager;
+let conversationStore;
 let operationActive = false;
 let networkActivity = { externalAccess: false, label: '' };
 
@@ -89,6 +91,10 @@ async function getState() {
 function registerIpc() {
   ipcMain.handle('app:get-initial-state', getState);
   ipcMain.handle('ollama:refresh', getState);
+  ipcMain.handle('conversations:list', () => conversationStore.list());
+  ipcMain.handle('conversations:get', (_event, id) => conversationStore.get(id));
+  ipcMain.handle('conversations:save', (_event, input) => conversationStore.save(input));
+  ipcMain.handle('conversations:delete', (_event, id) => conversationStore.delete(id));
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('guardian:authorizations', () => authorizationManager.list());
   ipcMain.handle('guardian:authorization-request', (_event, input) => {
@@ -187,6 +193,7 @@ app.whenReady().then(async () => {
   authorizationManager = createAuthorizationManager({
     auditPath: path.join(app.getPath('userData'), 'security-audit.jsonl'),
   });
+  conversationStore = createConversationStore(app.getPath('userData'));
   currentConfig = await configStore.load();
   registerIpc();
   createWindow();
