@@ -93,6 +93,7 @@ function registerIpc() {
   ipcMain.handle('app:get-initial-state', getState);
   ipcMain.handle('ollama:refresh', getState);
   ipcMain.handle('conversations:list', () => conversationStore.list());
+  ipcMain.handle('conversations:storage-path', () => conversationStore.getStoragePath());
   ipcMain.handle('conversations:get', (_event, id) => conversationStore.get(id));
   ipcMain.handle('conversations:save', (_event, input) => conversationStore.save(input));
   ipcMain.handle('conversations:delete', (_event, id) => conversationStore.delete(id));

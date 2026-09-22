@@ -13,6 +13,7 @@ const state = {
   activeConversationId: null,
   activeConversationTitle: '',
   vscodeProjectPath: '',
+  conversationStoragePath: '',
 };
 
 const byId = (id) => document.getElementById(id);
@@ -242,6 +243,12 @@ function renderConversations() {
   `).join('');
   select.value = state.activeConversationId || '';
   byId('delete-conversation').disabled = !state.activeConversationId;
+  byId('save-conversation').textContent = state.activeConversationId ? 'Salvar alterações' : 'Salvar conversa';
+  const storageStatus = byId('conversation-storage-status');
+  storageStatus.classList.toggle('saved', Boolean(state.activeConversationId));
+  storageStatus.innerHTML = state.activeConversationId
+    ? `<strong>Salva localmente: ${escapeHtml(state.activeConversationTitle)}</strong><span>${state.conversations.length} conversa(s) salva(s) · Arquivo: ${escapeHtml(state.conversationStoragePath)}</span>`
+    : `<strong>Conversa ainda não salva</strong><span>${state.conversations.length} conversa(s) salva(s) · Use “Salvar conversa” para guardar esta conversa. Arquivo: ${escapeHtml(state.conversationStoragePath)}</span>`;
   const vscodeSelect = byId('vscode-conversation');
   if (vscodeSelect) {
     const selected = vscodeSelect.value;
@@ -643,6 +650,7 @@ window.farolIA.onModelProgress(updateOperation);
 (async () => {
   try {
     Object.assign(state, await window.farolIA.getInitialState());
+    state.conversationStoragePath = await window.farolIA.getConversationStoragePath();
     syncBeacon();
     renderHardware();
     renderModels();

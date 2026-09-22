@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('farolIA', {
   decideAuthorization: (input) => ipcRenderer.invoke('guardian:authorization-decision', input),
   executeTerminal: (input) => ipcRenderer.invoke('terminal:execute', input),
   listConversations: () => ipcRenderer.invoke('conversations:list'),
+  getConversationStoragePath: () => ipcRenderer.invoke('conversations:storage-path'),
   getConversation: (id) => ipcRenderer.invoke('conversations:get', id),
   saveConversation: (input) => ipcRenderer.invoke('conversations:save', input),
   deleteConversation: (id) => ipcRenderer.invoke('conversations:delete', id),

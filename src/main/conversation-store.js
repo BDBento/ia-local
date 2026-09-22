@@ -44,6 +44,9 @@ function createConversationStore(userDataPath) {
   }
 
   return {
+    getStoragePath() {
+      return filePath;
+    },
     async list() {
       return (await readAll())
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

@@ -131,6 +131,11 @@ nav { display: grid; gap: 8px; }
 .composer { position: sticky; bottom: 20px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(15, 29, 25, 0.97); box-shadow: var(--shadow); }
 .composer-row, .composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .conversation-row { display: grid; grid-template-columns: minmax(180px, 1fr) repeat(4, auto); gap: 8px; margin-bottom: 8px; }
+.conversation-storage-status { display: grid; gap: 2px; margin-bottom: 6px; padding: 8px 10px; border: 1px solid rgba(244, 189, 80, 0.3); border-radius: 9px; background: rgba(244, 189, 80, 0.07); }
+.conversation-storage-status.saved { border-color: rgba(67, 227, 159, 0.35); background: rgba(67, 227, 159, 0.07); }
+.conversation-storage-status strong { color: var(--yellow); font-size: 12px; }
+.conversation-storage-status.saved strong { color: var(--green); }
+.conversation-storage-status span { color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
 .composer-row select { flex: 1; }
 .composer textarea { width: 100%; margin: 11px 0; padding: 13px; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); }
 .composer-footer span { color: var(--muted); font-size: 12px; }
