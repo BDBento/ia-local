@@ -153,3 +153,9 @@ O `.gitignore` cobre os formatos comuns, mas não substitui uma revisão antes d
 ## Uso responsável
 
 Use terminal, automação e testes de segurança somente em computadores e sistemas próprios ou com autorização explícita. O usuário continua responsável por revisar comandos e alterações produzidos pelos modelos.
+
+## Autor e licença
+
+Criado por **bbento**.
+
+Este projeto é software livre distribuído sob a [Licença MIT](LICENSE). Você pode usar, estudar, modificar e redistribuir o código, desde que preserve o aviso de direitos autorais e a licença.
