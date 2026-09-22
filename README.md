@@ -20,6 +20,7 @@ Aplicativo desktop para executar e conversar com modelos de inteligência artifi
 - autorização humana obrigatória para downloads, com token de uso único e expiração;
 - auditoria local das solicitações, decisões e usos de autorização;
 - configurações armazenadas localmente.
+- salvamento explícito de conversas nomeadas para reutilizar contexto em projetos futuros;
 - ferramenta PowerShell opcional para modelos Ollama compatíveis com tool calling;
 - confirmação humana, token de uso único, timeout e limite de saída para cada comando;
 

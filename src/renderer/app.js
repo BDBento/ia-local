@@ -9,6 +9,9 @@ const state = {
   externalAccess: false,
   guardian: null,
   authorizations: [],
+  conversations: [],
+  activeConversationId: null,
+  activeConversationTitle: '',
 };
 
 const byId = (id) => document.getElementById(id);
@@ -214,13 +217,49 @@ function fillSettings() {
 
 function renderMessages() {
   const container = byId('messages');
-  if (!state.messages.length) return;
+  if (!state.messages.length) {
+    container.innerHTML = `
+      <div class="welcome-card">
+        <span class="welcome-icon">✦</span>
+        <h2>Sua IA, dentro do seu computador</h2>
+        <p>Escolha um modelo local e comece uma conversa. Você pode salvar somente as conversas que quiser reutilizar.</p>
+      </div>`;
+    return;
+  }
   container.innerHTML = state.messages
     .filter((message) => message.role !== 'tool' || message.visible)
     .map((message) => `<div class="message ${message.role}">${escapeHtml(message.content || 'Solicitação de ferramenta')}</div>`).join('');
   requestAnimationFrame(() => {
     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   });
+}
+
+function renderConversations() {
+  const select = byId('saved-conversations');
+  select.innerHTML = '<option value="">Conversas salvas</option>' + state.conversations.map((item) => `
+    <option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} (${item.messageCount})</option>
+  `).join('');
+  select.value = state.activeConversationId || '';
+  byId('delete-conversation').disabled = !state.activeConversationId;
+}
+
+async function refreshConversations() {
+  state.conversations = await window.farolIA.listConversations();
+  renderConversations();
+}
+
+async function loadConversation(id) {
+  if (!id) return;
+  const conversation = await window.farolIA.getConversation(id);
+  state.activeConversationId = conversation.id;
+  state.activeConversationTitle = conversation.title;
+  state.messages = conversation.messages || [];
+  if ((state.ollama.installedModels || []).some((model) => model.name === conversation.model)) {
+    byId('chat-model').value = conversation.model;
+  }
+  renderConversations();
+  renderMessages();
+  byId('chat-hint').textContent = `Conversa aberta: ${conversation.title}`;
 }
 
 function escapeHtml(value) {
@@ -367,6 +406,55 @@ async function removeModel(model) {
 }
 
 document.querySelectorAll('.nav-button').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
+byId('new-conversation').addEventListener('click', () => {
+  if (state.messages.length && !window.confirm('Iniciar uma nova conversa? Mensagens não salvas serão descartadas.')) return;
+  state.messages = [];
+  state.activeConversationId = null;
+  state.activeConversationTitle = '';
+  renderConversations();
+  renderMessages();
+  byId('chat-input').focus();
+});
+byId('load-conversation').addEventListener('click', async () => {
+  try { await loadConversation(byId('saved-conversations').value); }
+  catch (error) { window.alert(error.message || 'Não foi possível abrir a conversa.'); }
+});
+byId('saved-conversations').addEventListener('change', () => {
+  byId('delete-conversation').disabled = !byId('saved-conversations').value;
+});
+byId('save-conversation').addEventListener('click', async () => {
+  if (!state.messages.length) return window.alert('Converse com a IA antes de salvar.');
+  const title = window.prompt('Nome da conversa:', state.activeConversationTitle || 'Novo projeto');
+  if (!title?.trim()) return;
+  try {
+    const saved = await window.farolIA.saveConversation({
+      id: state.activeConversationId,
+      title,
+      model: byId('chat-model').value,
+      messages: state.messages,
+    });
+    state.activeConversationId = saved.id;
+    state.activeConversationTitle = saved.title;
+    await refreshConversations();
+    byId('chat-hint').textContent = `Conversa salva: ${saved.title}`;
+  } catch (error) {
+    window.alert(error.message || 'Não foi possível salvar a conversa.');
+  }
+});
+byId('delete-conversation').addEventListener('click', async () => {
+  const id = byId('saved-conversations').value || state.activeConversationId;
+  if (!id || !window.confirm('Excluir permanentemente esta conversa salva?')) return;
+  try {
+    await window.farolIA.deleteConversation(id);
+    if (state.activeConversationId === id) {
+      state.activeConversationId = null;
+      state.activeConversationTitle = '';
+    }
+    await refreshConversations();
+  } catch (error) {
+    window.alert(error.message || 'Não foi possível excluir a conversa.');
+  }
+});
 byId('privacy-beacon').addEventListener('click', () => switchView('settings'));
 byId('refresh-models').addEventListener('click', refreshState);
 byId('refresh-installed').addEventListener('click', refreshState);
@@ -527,6 +615,7 @@ window.farolIA.onModelProgress(updateOperation);
     renderOllama();
     renderGuardian();
     await refreshAuthorizations();
+    await refreshConversations();
     fillSettings();
   } catch (error) {
     setBeacon('online');
