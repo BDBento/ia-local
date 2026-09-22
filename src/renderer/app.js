@@ -243,6 +243,7 @@ function renderConversations() {
   `).join('');
   select.value = state.activeConversationId || '';
   byId('delete-conversation').disabled = !state.activeConversationId;
+  byId('load-conversation').disabled = !select.value;
   byId('save-conversation').textContent = state.activeConversationId ? 'Salvar alterações' : 'Salvar conversa';
   const storageStatus = byId('conversation-storage-status');
   storageStatus.classList.remove('error');
@@ -258,6 +259,35 @@ function renderConversations() {
     `).join('');
     vscodeSelect.value = selected;
   }
+}
+
+function showConversationDialog({ title, message, inputValue = null, confirmLabel = 'Confirmar', danger = false }) {
+  const dialog = byId('conversation-dialog');
+  const inputWrap = byId('conversation-dialog-input-wrap');
+  const input = byId('conversation-dialog-input');
+  const confirmButton = byId('conversation-dialog-confirm');
+  byId('conversation-dialog-title').textContent = title;
+  byId('conversation-dialog-message').textContent = message;
+  inputWrap.hidden = inputValue === null;
+  input.value = inputValue === null ? '' : inputValue;
+  confirmButton.textContent = confirmLabel;
+  confirmButton.className = danger ? 'danger-button' : 'primary-button';
+  dialog.returnValue = 'cancel';
+  dialog.showModal();
+  if (inputValue !== null) requestAnimationFrame(() => { input.focus(); input.select(); });
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', () => resolve({
+      confirmed: dialog.returnValue === 'confirm',
+      value: input.value.trim(),
+    }), { once: true });
+  });
+}
+
+function showConversationError(title, detail) {
+  const storageStatus = byId('conversation-storage-status');
+  storageStatus.classList.remove('saved');
+  storageStatus.classList.add('error');
+  storageStatus.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(detail)}</span>`;
 }
 
 async function refreshConversations() {
@@ -423,8 +453,18 @@ async function removeModel(model) {
 }
 
 document.querySelectorAll('.nav-button').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
-byId('new-conversation').addEventListener('click', () => {
-  if (state.messages.length && !window.confirm('Iniciar uma nova conversa? Mensagens não salvas serão descartadas.')) return;
+byId('new-conversation').addEventListener('click', async () => {
+  if (state.messages.length) {
+    const decision = await showConversationDialog({
+      title: 'Iniciar nova conversa?',
+      message: state.activeConversationId
+        ? 'As mensagens já salvas continuarão disponíveis. Alterações feitas depois do último salvamento serão descartadas.'
+        : 'Esta conversa ainda não foi salva e suas mensagens serão descartadas.',
+      confirmLabel: 'Iniciar nova',
+      danger: !state.activeConversationId,
+    });
+    if (!decision.confirmed) return;
+  }
   state.messages = [];
   state.activeConversationId = null;
   state.activeConversationTitle = '';
@@ -433,11 +473,15 @@ byId('new-conversation').addEventListener('click', () => {
   byId('chat-input').focus();
 });
 byId('load-conversation').addEventListener('click', async () => {
-  try { await loadConversation(byId('saved-conversations').value); }
-  catch (error) { window.alert(error.message || 'Não foi possível abrir a conversa.'); }
+  const id = byId('saved-conversations').value;
+  if (!id) return showConversationError('Selecione uma conversa', 'Escolha uma conversa salva na lista antes de clicar em Abrir.');
+  try { await loadConversation(id); }
+  catch (error) { showConversationError('Falha ao abrir', error.message || 'Não foi possível abrir a conversa.'); }
 });
 byId('saved-conversations').addEventListener('change', () => {
-  byId('delete-conversation').disabled = !byId('saved-conversations').value;
+  const selected = Boolean(byId('saved-conversations').value);
+  byId('load-conversation').disabled = !selected;
+  byId('delete-conversation').disabled = !selected;
 });
 byId('save-conversation').addEventListener('click', async () => {
   if (!state.messages.length) {
@@ -448,12 +492,18 @@ byId('save-conversation').addEventListener('click', async () => {
     byId('chat-input').focus();
     return;
   }
-  const title = window.prompt('Nome da conversa:', state.activeConversationTitle || 'Novo projeto');
-  if (!title?.trim()) return;
+  const decision = await showConversationDialog({
+    title: state.activeConversationId ? 'Salvar alterações' : 'Salvar conversa',
+    message: 'Escolha um nome fácil de reconhecer depois.',
+    inputValue: state.activeConversationTitle || 'Novo projeto',
+    confirmLabel: 'Salvar',
+  });
+  if (!decision.confirmed) return;
+  if (!decision.value) return showConversationError('Nome obrigatório', 'Digite um nome para salvar a conversa.');
   try {
     const saved = await window.farolIA.saveConversation({
       id: state.activeConversationId,
-      title,
+      title: decision.value,
       model: byId('chat-model').value,
       messages: state.messages,
     });
@@ -462,12 +512,20 @@ byId('save-conversation').addEventListener('click', async () => {
     await refreshConversations();
     byId('chat-hint').textContent = `Conversa salva: ${saved.title}`;
   } catch (error) {
-    window.alert(error.message || 'Não foi possível salvar a conversa.');
+    showConversationError('Falha ao salvar', error.message || 'Não foi possível salvar a conversa.');
   }
 });
 byId('delete-conversation').addEventListener('click', async () => {
   const id = byId('saved-conversations').value || state.activeConversationId;
-  if (!id || !window.confirm('Excluir permanentemente esta conversa salva?')) return;
+  if (!id) return showConversationError('Selecione uma conversa', 'Escolha uma conversa salva antes de excluir.');
+  const selected = state.conversations.find((item) => item.id === id);
+  const decision = await showConversationDialog({
+    title: 'Excluir conversa?',
+    message: `A conversa “${selected?.title || 'selecionada'}” será removida permanentemente.`,
+    confirmLabel: 'Excluir permanentemente',
+    danger: true,
+  });
+  if (!decision.confirmed) return;
   try {
     await window.farolIA.deleteConversation(id);
     if (state.activeConversationId === id) {
@@ -476,7 +534,7 @@ byId('delete-conversation').addEventListener('click', async () => {
     }
     await refreshConversations();
   } catch (error) {
-    window.alert(error.message || 'Não foi possível excluir a conversa.');
+    showConversationError('Falha ao excluir', error.message || 'Não foi possível excluir a conversa.');
   }
 });
 byId('privacy-beacon').addEventListener('click', () => switchView('settings'));

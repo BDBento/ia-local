@@ -63,7 +63,7 @@
                 <select id="saved-conversations" aria-label="Conversas salvas">
                   <option value="">Conversas salvas</option>
                 </select>
-                <button id="load-conversation" class="secondary-button" type="button">Abrir</button>
+                <button id="load-conversation" class="secondary-button" type="button" disabled>Abrir</button>
                 <button id="new-conversation" class="secondary-button" type="button">Nova</button>
                 <button id="save-conversation" class="secondary-button" type="button">Salvar</button>
                 <button id="delete-conversation" class="danger-button" type="button" disabled>Excluir</button>
@@ -386,6 +386,21 @@
       <div class="dialog-actions">
         <button class="secondary-button" type="submit" value="deny">Negar</button>
         <button class="primary-button" type="submit" value="approve">Executar uma vez</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="conversation-dialog" class="authorization-dialog" aria-labelledby="conversation-dialog-title">
+    <form method="dialog">
+      <p class="eyebrow">CONVERSAS LOCAIS</p>
+      <h2 id="conversation-dialog-title">Confirmar ação</h2>
+      <p id="conversation-dialog-message" class="section-description"></p>
+      <label id="conversation-dialog-input-wrap" class="full-field">Nome da conversa
+        <input id="conversation-dialog-input" type="text" maxlength="120" autocomplete="off">
+      </label>
+      <div class="dialog-actions">
+        <button class="secondary-button" type="submit" value="cancel">Cancelar</button>
+        <button id="conversation-dialog-confirm" class="primary-button" type="submit" value="confirm">Confirmar</button>
       </div>
     </form>
   </dialog>
