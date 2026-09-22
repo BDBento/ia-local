@@ -12,6 +12,7 @@ const state = {
   conversations: [],
   activeConversationId: null,
   activeConversationTitle: '',
+  vscodeProjectPath: '',
 };
 
 const byId = (id) => document.getElementById(id);
@@ -241,6 +242,14 @@ function renderConversations() {
   `).join('');
   select.value = state.activeConversationId || '';
   byId('delete-conversation').disabled = !state.activeConversationId;
+  const vscodeSelect = byId('vscode-conversation');
+  if (vscodeSelect) {
+    const selected = vscodeSelect.value;
+    vscodeSelect.innerHTML = '<option value="">Nenhuma conversa</option>' + state.conversations.map((item) => `
+      <option value="${escapeHtml(item.id)}">${escapeHtml(item.title)}</option>
+    `).join('');
+    vscodeSelect.value = selected;
+  }
 }
 
 async function refreshConversations() {
@@ -456,6 +465,29 @@ byId('delete-conversation').addEventListener('click', async () => {
   }
 });
 byId('privacy-beacon').addEventListener('click', () => switchView('settings'));
+byId('choose-vscode-project').addEventListener('click', async () => {
+  const selected = await window.farolIA.chooseVsCodeProject();
+  if (!selected) return;
+  state.vscodeProjectPath = selected;
+  byId('vscode-project-path').value = selected;
+});
+byId('sync-vscode').addEventListener('click', async () => {
+  if (!state.vscodeProjectPath) return window.alert('Escolha primeiro a pasta de um projeto do VS Code.');
+  const button = byId('sync-vscode');
+  button.disabled = true;
+  byId('vscode-sync-status').textContent = 'Sincronizando...';
+  try {
+    const result = await window.farolIA.syncVsCode({
+      projectPath: state.vscodeProjectPath,
+      conversationId: byId('vscode-conversation').value || null,
+    });
+    byId('vscode-sync-status').textContent = `${result.modelCount} modelo(s) sincronizado(s)${result.contextExported ? ' com contexto' : ''}.`;
+  } catch (error) {
+    byId('vscode-sync-status').textContent = error.message || 'Falha ao sincronizar.';
+  } finally {
+    button.disabled = false;
+  }
+});
 byId('refresh-models').addEventListener('click', refreshState);
 byId('refresh-installed').addEventListener('click', refreshState);
 byId('detect-hardware').addEventListener('click', refreshState);

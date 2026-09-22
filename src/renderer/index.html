@@ -291,6 +291,32 @@
               <div class="safety-row"><span>Limite por comando</span><strong>30 segundos</strong></div>
             </article>
 
+            <article class="panel vscode-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">CONTINGÊNCIA LOCAL</p>
+                  <h2>Sincronizar com VS Code</h2>
+                </div>
+                <span class="info-pill">Continue + Ollama</span>
+              </div>
+              <p>Gera uma configuração local com os modelos instalados e, opcionalmente, leva uma conversa salva como contexto do projeto.</p>
+              <div class="vscode-sync-grid">
+                <label>Pasta do projeto
+                  <div class="path-picker">
+                    <input id="vscode-project-path" type="text" readonly placeholder="Selecione uma pasta do VS Code">
+                    <button id="choose-vscode-project" class="secondary-button" type="button">Escolher</button>
+                  </div>
+                </label>
+                <label>Conversa usada como contexto
+                  <select id="vscode-conversation"><option value="">Nenhuma conversa</option></select>
+                </label>
+              </div>
+              <div class="form-actions">
+                <span id="vscode-sync-status" role="status"></span>
+                <button id="sync-vscode" class="primary-button" type="button">Sincronizar projeto</button>
+              </div>
+            </article>
+
             <article class="panel limits-panel">
               <div class="panel-heading">
                 <div>

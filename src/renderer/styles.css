@@ -180,6 +180,11 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .checkbox-row { display: flex; align-items: center; gap: 10px; margin-top: 18px; color: var(--muted); }
 .form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 22px; }
 #save-status { color: var(--green); font-size: 12px; }
+#vscode-sync-status { color: var(--green); font-size: 12px; }
+.vscode-sync-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+.vscode-sync-grid > label { display: grid; gap: 7px; color: var(--muted); font-size: 12px; }
+.path-picker { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.path-picker input { min-width: 0; padding: 10px 11px; border: 1px solid var(--line); border-radius: 9px; background: #0b1713; color: var(--text); }
 
 .switch { position: relative; width: 48px; height: 27px; }
 .switch input { position: absolute; opacity: 0; }
@@ -271,4 +276,5 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
   .inline-form { grid-template-columns: 1fr; }
   .conversation-row { grid-template-columns: 1fr 1fr; }
   .conversation-row select { grid-column: 1 / -1; }
+  .vscode-sync-grid { grid-template-columns: 1fr; }
 }
