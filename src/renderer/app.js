@@ -61,14 +61,30 @@ function renderHardware() {
 
 function renderModels() {
   byId('model-grid').innerHTML = state.recommendations.map((model) => `
-    <article class="model-card">
+    <article class="model-card" role="button" tabindex="0" data-select-model="${escapeHtml(model.id)}" aria-label="Selecionar ${escapeHtml(model.name)} para baixar">
       <h3>${escapeHtml(model.name)}</h3>
       <p>${escapeHtml(model.purpose)}</p>
       <div class="model-meta"><span>${model.sizeGB} GB no disco</span><span>${model.recommendedRamGB} GB RAM recomendada</span></div>
       <span class="compatibility ${model.level}">${escapeHtml(model.label)}</span>
       <small class="reason">${escapeHtml(model.reason)}</small>
+      <small class="repository-name">Repositório: ${escapeHtml(model.id)}</small>
     </article>
   `).join('');
+
+  document.querySelectorAll('[data-select-model]').forEach((card) => {
+    const select = () => {
+      byId('pull-model-name').value = card.dataset.selectModel;
+      byId('pull-model-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => byId('pull-model-name').focus(), 250);
+    };
+    card.addEventListener('click', select);
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        select();
+      }
+    });
+  });
 }
 
 function formatBytes(bytes) {

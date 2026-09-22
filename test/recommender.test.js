@@ -10,6 +10,8 @@ test('inclui variantes DeepSeek R1 válidas no catálogo', () => {
   assert.ok(ids.includes('deepseek-r1:1.5b'));
   assert.ok(ids.includes('deepseek-r1:7b'));
   assert.ok(ids.includes('deepseek-r1:8b'));
+  assert.ok(ids.includes('deepseek-r1:14b'));
+  assert.ok(ids.includes('deepseek-r1:32b'));
 });
 
 test('contexto maior reserva mais memória', () => {

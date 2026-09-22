@@ -31,6 +31,8 @@ O catálogo de recomendações não limita os modelos aceitos. É possível info
 deepseek-r1:1.5b
 deepseek-r1:7b
 deepseek-r1:8b
+deepseek-r1:14b
+deepseek-r1:32b
 qwen3:8b
 qwen2.5-coder:7b
 dolphin-mistral:7b

@@ -147,7 +147,8 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .section-description { max-width: 780px; }
 .info-pill { padding: 6px 10px; border-radius: 999px; background: var(--panel-strong); color: var(--muted); font-size: 12px; }
 .model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 24px; }
-.model-card { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.model-card { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); cursor: pointer; transition: 160ms ease; }
+.model-card:hover, .model-card:focus-visible { border-color: var(--green); background: var(--panel-strong); transform: translateY(-2px); outline: none; }
 .model-card h3 { margin: 0 0 6px; }
 .model-card p { min-height: 42px; color: var(--muted); }
 .model-meta { display: flex; justify-content: space-between; padding: 13px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
@@ -157,6 +158,7 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .compatibility.cpu { background: rgba(112, 166, 232, 0.14); color: #8fbef6; }
 .compatibility.unsupported { background: rgba(255, 107, 103, 0.13); color: var(--red); }
 .reason { display: block; margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.repository-name { display: block; margin-top: 10px; color: var(--green); font-family: Consolas, monospace; font-size: 11px; }
 
 .settings-grid { display: grid; gap: 18px; max-width: 980px; }
 .panel { padding: 23px; border: 1px solid var(--line); border-radius: 17px; background: var(--panel); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12); }
