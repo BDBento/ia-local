@@ -1,9 +1,56 @@
+# Dependências e artefatos de build
 node_modules/
 dist/
 release/
+coverage/
+.nyc_output/
+**/bin/
+**/obj/
+
+# Dados locais do Farol (podem conter conversas e comandos pessoais)
+config.json
+conversations.json
+security-audit.jsonl
+user-data/
+local-data/
+backups/
+.continue/
+
+# Modelos e arquivos grandes locais
+*.gguf
+*.safetensors
+*.onnx
+*.ckpt
+*.pt
+*.pth
+
+# Segredos e credenciais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
+
+# Logs, caches e temporários
 *.log
-.DS_Store
-Thumbs.db
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+.cache/
+tmp/
+temp/
+
+# Editores e sistema operacional
 .vscode/
 .idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
 
