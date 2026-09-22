@@ -2,6 +2,33 @@
 
 module.exports = Object.freeze([
   {
+    id: 'deepseek-r1:1.5b',
+    name: 'DeepSeek R1 1.5B',
+    purpose: 'Raciocínio compacto para computadores com pouca memória',
+    sizeGB: 1.1,
+    minRamGB: 4,
+    recommendedRamGB: 6,
+    fullGpuVramGB: 2.5,
+  },
+  {
+    id: 'deepseek-r1:7b',
+    name: 'DeepSeek R1 7B',
+    purpose: 'Raciocínio, matemática e resolução de problemas',
+    sizeGB: 4.7,
+    minRamGB: 10,
+    recommendedRamGB: 12,
+    fullGpuVramGB: 7,
+  },
+  {
+    id: 'deepseek-r1:8b',
+    name: 'DeepSeek R1 8B',
+    purpose: 'Raciocínio avançado e respostas mais elaboradas',
+    sizeGB: 5.2,
+    minRamGB: 11,
+    recommendedRamGB: 14,
+    fullGpuVramGB: 8,
+  },
+  {
     id: 'qwen3:4b',
     name: 'Qwen 3 4B',
     purpose: 'Chat geral rápido e multilíngue',

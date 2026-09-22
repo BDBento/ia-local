@@ -28,6 +28,9 @@ Aplicativo desktop para executar e conversar com modelos de inteligência artifi
 O catálogo de recomendações não limita os modelos aceitos. É possível informar manualmente qualquer nome válido reconhecido pelo Ollama, por exemplo:
 
 ```text
+deepseek-r1:1.5b
+deepseek-r1:7b
+deepseek-r1:8b
 qwen3:8b
 qwen2.5-coder:7b
 dolphin-mistral:7b

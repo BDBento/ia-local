@@ -3,6 +3,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { contextOverheadGB, recommendModels } = require('../src/shared/recommender');
+const catalog = require('../src/shared/model-catalog');
+
+test('inclui variantes DeepSeek R1 válidas no catálogo', () => {
+  const ids = catalog.map((model) => model.id);
+  assert.ok(ids.includes('deepseek-r1:1.5b'));
+  assert.ok(ids.includes('deepseek-r1:7b'));
+  assert.ok(ids.includes('deepseek-r1:8b'));
+});
 
 test('contexto maior reserva mais memória', () => {
   assert.ok(contextOverheadGB(16384) > contextOverheadGB(4096));
