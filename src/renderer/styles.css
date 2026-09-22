@@ -116,8 +116,8 @@ nav { display: grid; gap: 8px; }
 .view.active { display: block; animation: appear 180ms ease; }
 @keyframes appear { from { opacity: 0; transform: translateY(3px); } }
 
-.chat-layout { display: grid; grid-template-rows: minmax(340px, 1fr) auto; min-height: calc(100vh - 144px); max-width: 980px; margin: 0 auto; }
-.messages { display: flex; flex-direction: column; gap: 16px; padding: 24px 0; overflow: auto; }
+.chat-layout { display: grid; grid-template-rows: minmax(0, 1fr) auto; height: calc(100vh - 144px); min-height: 480px; max-width: 980px; margin: 0 auto; overflow: hidden; }
+.messages { display: flex; min-height: 0; flex-direction: column; gap: 16px; padding: 24px 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
 .welcome-card { max-width: 560px; margin: auto; padding: 38px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(145deg, rgba(20, 38, 32, 0.88), rgba(11, 24, 20, 0.78)); text-align: center; box-shadow: var(--shadow); }
 .welcome-icon { color: var(--green); font-size: 38px; }
 .welcome-card h2 { margin: 14px 0 8px; }

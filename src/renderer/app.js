@@ -202,7 +202,9 @@ function renderMessages() {
   container.innerHTML = state.messages
     .filter((message) => message.role !== 'tool' || message.visible)
     .map((message) => `<div class="message ${message.role}">${escapeHtml(message.content || 'Solicitação de ferramenta')}</div>`).join('');
-  container.scrollTop = container.scrollHeight;
+  requestAnimationFrame(() => {
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+  });
 }
 
 function escapeHtml(value) {
