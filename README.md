@@ -84,18 +84,17 @@ Use os controles **Salvar**, **Abrir**, **Nova** e **Excluir** na tela de conver
 
 Os dados ficam na pasta de dados do aplicativo, fora do repositório. Arquivos como `conversations.json`, `config.json` e `security-audit.jsonl` são ignorados pelo Git.
 
-## VS Code e Continue
+## Farol no VS Code
 
 Para usar os modelos locais no VS Code quando serviços online estiverem indisponíveis:
 
-1. instale a extensão [Continue](https://marketplace.visualstudio.com/items?itemName=Continue.continue);
-2. no Farol, abra **Configurações → Sincronizar com VS Code**;
-3. escolha a pasta do projeto;
-4. opcionalmente selecione uma conversa salva como contexto;
-5. clique em **Integrar e abrir no VS Code**;
-6. o Farol tentará instalar o Continue, configurar uma instalação nova e abrir o guia `.continue/FAROL-VSCODE.md`.
+1. no Farol, abra **Configurações → Usar o Farol no VS Code**;
+2. escolha a pasta do projeto;
+3. opcionalmente selecione uma conversa salva como contexto;
+4. clique em **Integrar e abrir no VS Code**;
+5. o Farol prepara a integração e abre um guia simples dentro do editor.
 
-O Farol gera uma configuração que aponta para `127.0.0.1:11434` e uma regra de contexto em `.continue/rules`. Se já existir uma configuração global do Continue, ela é preservada e o guia explica como mesclar os modelos.
+Nos bastidores, a integração utiliza a extensão livre [Continue](https://marketplace.visualstudio.com/items?itemName=Continue.continue) para conectar o VS Code ao Ollama em `127.0.0.1:11434`. Se já existir uma configuração dessa extensão, ela é preservada.
 
 Para tarefas com arquivos e terminal, use o modo Agent do Continue e mantenha a confirmação de ferramentas ativada.
 

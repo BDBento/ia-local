@@ -58,14 +58,23 @@ async function syncProject({ projectPath, models, conversation }) {
   recommendations.add('Continue.continue');
   await fs.writeFile(extensionsPath, `${JSON.stringify({ ...extensions, recommendations: [...recommendations] }, null, 2)}\n`, 'utf8');
   await fs.writeFile(path.join(continueDir, 'FAROL-VSCODE.md'), [
-    '# Farol IA Local no VS Code',
+    '# Farol no VS Code',
     '',
-    '1. O Farol tentou instalar a extensão Continue automaticamente. Se ela não aparecer, aceite a recomendação do VS Code.',
-    '2. Abra o painel Continue. Em uma instalação nova, a configuração local já foi criada automaticamente.',
-    '3. Se você já tinha uma configuração própria, ela foi preservada. Abra a engrenagem de Local Config e acrescente os modelos de `.continue/farol-config.yaml`.',
-    '4. Mantenha o Ollama em execução em `127.0.0.1:11434`.',
+    '## Como abrir seu assistente local',
     '',
-    'O contexto sincronizado fica em `.continue/rules/90-farol-context.md` e é carregado pelo projeto.',
+    '1. Procure o ícone de assistente na barra lateral do VS Code e clique nele.',
+    '2. No seletor de modelos, escolha um nome iniciado por **Farol ·**.',
+    '3. Escreva uma pergunta para testar. Exemplo: `Responda somente: FAROL LOCAL OK`.',
+    '4. Para editar arquivos ou usar o terminal, selecione o modo **Agent** e confira cada autorização.',
+    '',
+    '## Se os modelos Farol não aparecerem',
+    '',
+    '1. Pressione `Ctrl+Shift+P` e execute **Developer: Reload Window**.',
+    '2. Verifique se o Ollama está aberto.',
+    '3. Aceite a instalação recomendada da extensão Continue. Ela é o componente usado pelo Farol para conversar dentro do VS Code.',
+    '4. Se você já possuía uma configuração do Continue, abra **Local Config** e copie os modelos de `.continue/farol-config.yaml`.',
+    '',
+    'O contexto sincronizado é carregado automaticamente de `.continue/rules/90-farol-context.md`, quando esse arquivo existir.',
   ].join('\n'), 'utf8');
   return { projectPath: root, modelCount: models.length, contextExported: Boolean(context) };
 }

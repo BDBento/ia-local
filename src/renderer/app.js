@@ -497,8 +497,8 @@ byId('sync-vscode').addEventListener('click', async () => {
       conversationId: byId('vscode-conversation').value || null,
     });
     byId('vscode-sync-status').textContent = result.extensionInstalled
-      ? `${result.modelCount} modelo(s) integrados. VS Code aberto com o guia.`
-      : `${result.modelCount} modelo(s) sincronizados. Instale o Continue pelo guia aberto no VS Code.`;
+      ? `${result.modelCount} modelo(s) integrados. O Farol já pode ser usado no VS Code.`
+      : `${result.modelCount} modelo(s) preparados. Conclua o último passo no guia aberto no VS Code.`;
   } catch (error) {
     byId('vscode-sync-status').textContent = error.message || 'Falha ao sincronizar.';
   } finally {
