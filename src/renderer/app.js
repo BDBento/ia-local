@@ -245,6 +245,7 @@ function renderConversations() {
   byId('delete-conversation').disabled = !state.activeConversationId;
   byId('save-conversation').textContent = state.activeConversationId ? 'Salvar alterações' : 'Salvar conversa';
   const storageStatus = byId('conversation-storage-status');
+  storageStatus.classList.remove('error');
   storageStatus.classList.toggle('saved', Boolean(state.activeConversationId));
   storageStatus.innerHTML = state.activeConversationId
     ? `<strong>Salva localmente: ${escapeHtml(state.activeConversationTitle)}</strong><span>${state.conversations.length} conversa(s) salva(s) · Arquivo: ${escapeHtml(state.conversationStoragePath)}</span>`
@@ -439,7 +440,14 @@ byId('saved-conversations').addEventListener('change', () => {
   byId('delete-conversation').disabled = !byId('saved-conversations').value;
 });
 byId('save-conversation').addEventListener('click', async () => {
-  if (!state.messages.length) return window.alert('Converse com a IA antes de salvar.');
+  if (!state.messages.length) {
+    const storageStatus = byId('conversation-storage-status');
+    storageStatus.classList.remove('saved');
+    storageStatus.classList.add('error');
+    storageStatus.innerHTML = '<strong>Nada para salvar</strong><span>Envie pelo menos uma mensagem antes de salvar a conversa.</span>';
+    byId('chat-input').focus();
+    return;
+  }
   const title = window.prompt('Nome da conversa:', state.activeConversationTitle || 'Novo projeto');
   if (!title?.trim()) return;
   try {
