@@ -14,6 +14,7 @@ const terminal = require('./terminal');
 const { createConversationStore } = require('./conversation-store');
 const vscodeIntegration = require('./vscode-integration');
 const { createAssessmentPlan } = require('../shared/security-assessment');
+const bugBountyScanner = require('./bug-bounty-scanner');
 
 let mainWindow;
 let configStore;
@@ -134,24 +135,43 @@ function registerIpc() {
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('guardian:authorizations', () => authorizationManager.list());
   ipcMain.handle('guardian:authorization-request', (_event, input) => {
-    if (!['model-download', 'terminal-command'].includes(input?.kind)) throw new Error('Tipo de autorização não permitido.');
+    if (!['model-download', 'terminal-command', 'security-scan'].includes(input?.kind)) throw new Error('Tipo de autorização não permitido.');
     if (input.kind === 'terminal-command' && !currentConfig.terminalToolsEnabled) {
       throw new Error('As ferramentas de terminal estão desativadas nas configurações.');
     }
     const target = input.kind === 'model-download'
       ? ollama.validateModelName(input?.target)
-      : terminal.validateCommand(input?.target);
+      : input.kind === 'security-scan'
+        ? bugBountyScanner.normalizePublicTarget(input?.target)
+        : terminal.validateCommand(input?.target);
     return authorizationManager.request({
       kind: input.kind,
       target,
       reason: input.kind === 'model-download'
         ? 'Baixar um modelo por meio do Ollama requer acesso à internet.'
-        : String(input?.reason || 'A IA solicitou a execução deste comando local.').slice(0, 300),
+        : input.kind === 'security-scan'
+          ? 'Executar auditoria HTTP não destrutiva no alvo autorizado.'
+          : String(input?.reason || 'A IA solicitou a execução deste comando local.').slice(0, 300),
     });
   });
   ipcMain.handle('guardian:authorization-decision', (_event, input) => {
     return authorizationManager.decide(input?.id, input?.decision);
   });
+  ipcMain.handle('security:scan', async (_event, input) => runExclusive(async () => {
+    const target = bugBountyScanner.normalizePublicTarget(input?.target);
+    await authorizationManager.consume({
+      id: input?.authorizationId,
+      approvalToken: input?.approvalToken,
+      kind: 'security-scan',
+      target,
+    });
+    sendNetworkActivity(true, 'Auditoria Bug Bounty');
+    try {
+      return await bugBountyScanner.scanTarget({ target, allowedTargets: input?.allowedTargets });
+    } finally {
+      sendNetworkActivity(false);
+    }
+  }));
   ipcMain.handle('settings:save', async (_event, input) => {
     currentConfig = await configStore.save(input);
     applyNetworkPolicy();

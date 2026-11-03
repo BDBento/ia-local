@@ -286,7 +286,17 @@
             <div id="security-plan-phases" class="phase-list"></div>
             <div class="scope-summary"><span>Fora do escopo</span><strong id="security-plan-excluded"></strong></div>
             <div class="scope-summary"><span>Acesso externo</span><strong id="security-plan-network"></strong></div>
+            <div id="bug-bounty-auto-actions" class="bug-bounty-auto-actions hidden">
+              <div><strong>Auditoria automática para iniciantes</strong><small>Verifica HTTPS, cabeçalhos, cookies e exposição básica sem explorar vulnerabilidades.</small></div>
+              <button id="security-run-scan" class="primary-button" type="button">Buscar bugs automaticamente</button>
+            </div>
             <div class="form-actions"><button id="security-copy-prompt" class="secondary-button" type="button">Copiar instruções</button><button id="security-open-chat" class="primary-button" type="button">Iniciar sessão didática</button></div>
+          </article>
+          <article id="security-scan-result" class="panel security-scan-result hidden" aria-live="polite">
+            <div class="panel-heading"><div><p class="eyebrow">3 · RESULTADOS AUTOMÁTICOS</p><h2>Achados para revisar</h2></div><span id="security-scan-summary" class="info-pill"></span></div>
+            <p id="security-scan-status" class="section-description"></p>
+            <div id="security-findings" class="security-findings"></div>
+            <div class="form-actions"><button id="security-copy-report" class="secondary-button" type="button">Copiar rascunho do relatório</button></div>
           </article>
         </section>
 
@@ -471,12 +481,12 @@
       <h2 id="network-auth-title">Permitir acesso à internet?</h2>
       <p id="network-auth-reason" class="section-description"></p>
       <div class="authorization-details">
-        <div><span>Operação</span><strong>Baixar modelo</strong></div>
+        <div><span>Operação</span><strong id="network-auth-operation">Baixar modelo</strong></div>
         <div><span>Destino lógico</span><strong id="network-auth-target">—</strong></div>
         <div><span>Validade para iniciar</span><strong>60 segundos</strong></div>
         <div><span>Quantidade de usos</span><strong>Uma vez</strong></div>
       </div>
-      <p class="authorization-warning">O download será feito pelo Ollama. O farol ficará vermelho durante a operação.</p>
+      <p id="network-auth-warning" class="authorization-warning">O download será feito pelo Ollama. O farol ficará vermelho durante a operação.</p>
       <div class="dialog-actions">
         <button class="secondary-button" type="submit" value="deny">Negar</button>
         <button class="primary-button" type="submit" value="approve">Autorizar uma vez</button>

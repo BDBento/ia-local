@@ -211,7 +211,7 @@ function renderAuthorizations() {
   container.innerHTML = state.authorizations.length
     ? state.authorizations.map((item) => `
       <div class="authorization-item">
-        <div><strong>${escapeHtml(item.target)}</strong><small>${item.kind === 'terminal-command' ? 'Comando de terminal' : 'Download de modelo'} · ${new Date(item.createdAt).toLocaleString('pt-BR')}</small></div>
+        <div><strong>${escapeHtml(item.target)}</strong><small>${item.kind === 'terminal-command' ? 'Comando de terminal' : item.kind === 'security-scan' ? 'Auditoria Bug Bounty' : 'Download de modelo'} · ${new Date(item.createdAt).toLocaleString('pt-BR')}</small></div>
         <span class="authorization-status ${escapeHtml(item.status)}">${escapeHtml(labels[item.status] || item.status)}</span>
       </div>
     `).join('')
@@ -222,6 +222,11 @@ function askNetworkAuthorization(authorization) {
   const dialog = byId('network-auth-dialog');
   byId('network-auth-target').textContent = authorization.target;
   byId('network-auth-reason').textContent = authorization.reason;
+  const isScan = authorization.kind === 'security-scan';
+  byId('network-auth-operation').textContent = isScan ? 'Auditoria Bug Bounty' : 'Baixar modelo';
+  byId('network-auth-warning').textContent = isScan
+    ? 'Será feita uma consulta HTTP não destrutiva somente ao alvo exibido. O farol ficará vermelho durante a operação.'
+    : 'O download será feito pelo Ollama. O farol ficará vermelho durante a operação.';
   dialog.returnValue = 'deny';
   dialog.showModal();
   return new Promise((resolve) => {
@@ -562,6 +567,7 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
       : 'Bloqueado para esta sessão';
     byId('security-plan-phases').innerHTML = currentSecurityPlan.phases.map((phase, index) => `<div><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(phase)}</strong></div>`).join('');
     byId('security-plan-result').classList.remove('hidden');
+    byId('bug-bounty-auto-actions').classList.toggle('hidden', currentSecurityPlan.engagement !== 'bug-bounty');
     status.textContent = 'Modo Pentest preparado com escopo validado.';
     byId('security-plan-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
@@ -582,6 +588,53 @@ byId('security-copy-prompt').addEventListener('click', async () => {
   if (!currentSecurityPlan) return;
   await navigator.clipboard.writeText(currentSecurityPlan.prompt);
   byId('security-plan-status').textContent = 'Instruções copiadas.';
+});
+byId('security-run-scan').addEventListener('click', async () => {
+  if (!currentSecurityPlan || currentSecurityPlan.engagement !== 'bug-bounty') return;
+  const button = byId('security-run-scan');
+  const status = byId('security-scan-status');
+  button.disabled = true;
+  byId('security-scan-result').classList.remove('hidden');
+  status.textContent = 'Preparando autorização...';
+  try {
+    const request = await window.farolIA.requestAuthorization({ kind: 'security-scan', target: currentSecurityPlan.target });
+    const approved = await askNetworkAuthorization(request);
+    if (!approved) {
+      await window.farolIA.decideAuthorization({ id: request.id, decision: 'deny' });
+      status.textContent = 'Auditoria cancelada pelo operador.';
+      return;
+    }
+    const grant = await window.farolIA.decideAuthorization({ id: request.id, decision: 'approve' });
+    status.textContent = 'Consultando o alvo autorizado com baixo impacto...';
+    const result = await window.farolIA.runSecurityScan({
+      target: currentSecurityPlan.target,
+      allowedTargets: currentSecurityPlan.allowedTargets,
+      authorizationId: request.id,
+      approvalToken: grant.approvalToken,
+    });
+    currentSecurityPlan.scanResult = result;
+    const counts = result.findings.reduce((map, item) => ({ ...map, [item.severity]: (map[item.severity] || 0) + 1 }), {});
+    byId('security-scan-summary').textContent = `${result.findings.length} achado(s)`;
+    byId('security-scan-summary').title = `Médio: ${counts.medium || 0}; baixo: ${counts.low || 0}; informativo: ${counts.info || 0}`;
+    status.textContent = `Verificação concluída em ${new Date(result.checkedAt).toLocaleString('pt-BR')}. Confirme manualmente antes de reportar.`;
+    byId('security-findings').innerHTML = result.findings.length ? result.findings.map((finding) => `
+      <article class="finding-card ${escapeHtml(finding.severity)}">
+        <span>${escapeHtml(finding.severity)}</span><h3>${escapeHtml(finding.title)}</h3>
+        <p><strong>Por que apareceu:</strong> ${escapeHtml(finding.evidence)}</p>
+        <p><strong>Como corrigir:</strong> ${escapeHtml(finding.recommendation)}</p>
+      </article>`).join('') : '<div class="installed-empty">Nenhum achado básico foi identificado.</div>';
+    await refreshAuthorizations();
+  } catch (error) {
+    status.textContent = error.message || 'Não foi possível concluir a auditoria.';
+  } finally {
+    button.disabled = false;
+  }
+});
+byId('security-copy-report').addEventListener('click', async () => {
+  const report = currentSecurityPlan?.scanResult?.report;
+  if (!report) return;
+  await navigator.clipboard.writeText(report);
+  byId('security-scan-status').textContent = 'Rascunho copiado. Valide o achado e adapte ao formato do programa antes de enviar.';
 });
 byId('new-conversation').addEventListener('click', async () => {
   if (state.messages.length) {

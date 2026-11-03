@@ -260,6 +260,18 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .scope-summary { display: grid; gap: 5px; padding: 13px 0; border-top: 1px solid var(--line); }
 .scope-summary span { color: var(--muted); font-size: 11px; text-transform: uppercase; }
 #security-plan-status { color: var(--green); font-size: 12px; }
+.bug-bounty-auto-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 18px; padding: 16px; border: 1px solid rgba(67, 227, 159, .35); border-radius: 12px; background: rgba(67, 227, 159, .07); }
+.bug-bounty-auto-actions strong, .bug-bounty-auto-actions small { display: block; }
+.bug-bounty-auto-actions small { margin-top: 4px; color: var(--muted); }
+.security-scan-result { margin-top: 18px; border-color: rgba(112, 166, 232, .35); }
+.security-findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 18px; }
+.finding-card { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #0b1814; }
+.finding-card > span { display: inline-block; padding: 4px 7px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+.finding-card.medium > span { background: rgba(244, 189, 80, .14); color: var(--yellow); }
+.finding-card.low > span { background: rgba(112, 166, 232, .14); color: #8fbef6; }
+.finding-card.info > span { background: rgba(67, 227, 159, .12); color: var(--green); }
+.finding-card h3 { margin: 10px 0; font-size: 16px; }
+.finding-card p { margin: 8px 0 0; font-size: 12px; line-height: 1.5; }
 .training-intro h2 { margin: 6px 0; font-size: 25px; }
 .training-form { max-width: 980px; }
 .notice-card { display: grid; gap: 5px; margin-bottom: 22px; padding: 14px 16px; border-left: 3px solid var(--yellow); border-radius: 9px; background: rgba(244, 189, 80, 0.08); }
