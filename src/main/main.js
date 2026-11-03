@@ -174,7 +174,7 @@ function registerIpc() {
     });
     sendNetworkActivity(true, 'Auditoria Bug Bounty');
     try {
-      return await bugBountyScanner.scanTarget({ target, allowedTargets: input?.allowedTargets });
+      return await bugBountyScanner.scanTarget({ target, allowedTargets: input?.allowedTargets, programPolicy: input?.programPolicy });
     } finally {
       sendNetworkActivity(false);
     }

@@ -270,6 +270,8 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .finding-card.medium > span { background: rgba(244, 189, 80, .14); color: var(--yellow); }
 .finding-card.low > span { background: rgba(112, 166, 232, .14); color: #8fbef6; }
 .finding-card.info > span { background: rgba(67, 227, 159, .12); color: var(--green); }
+.finding-card.excluded { opacity: .72; border-color: rgba(255, 107, 103, .28); }
+.finding-card.excluded > span { background: rgba(255, 107, 103, .13); color: var(--red); }
 .finding-card h3 { margin: 10px 0; font-size: 16px; }
 .finding-card p { margin: 8px 0 0; font-size: 12px; line-height: 1.5; }
 .security-tools-panel { margin-top: 18px; }

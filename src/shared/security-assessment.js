@@ -69,6 +69,7 @@ function createAssessmentPlan(input = {}) {
   const externalAccess = input.externalAccess === true;
   if (engagement === 'bug-bounty' && !externalAccess) throw new Error('Bug Bounty requer autorização explícita de acesso externo.');
   const programUrl = engagement === 'bug-bounty' ? validateProgramUrl(input.programUrl) : '';
+  const programPolicy = engagement === 'bug-bounty' ? String(input.programPolicy || '').trim().slice(0, 100000) : '';
   const allowedTargets = externalAccess ? validateScope(input.allowedTargets || target) : [];
   const objective = engagement === 'red-team' ? cleanText(input.objective, 500) : '';
   const rulesOfEngagement = engagement === 'red-team' ? cleanText(input.rulesOfEngagement, 1500) : '';
@@ -100,7 +101,7 @@ function createAssessmentPlan(input = {}) {
   return {
     target, owner, method, methodLabel: methodLabels[method], depth,
     depthLabel: depth === 'passive' ? 'Somente observação' : 'Padrão não destrutivo',
-    excluded, phases, engagement, externalAccess, programUrl, allowedTargets,
+    excluded, phases, engagement, externalAccess, programUrl, programPolicy, allowedTargets,
     objective, rulesOfEngagement, stopConditions, operationWindow, intensity, recoveryPlan,
     prompt: [
       'Atue como analista de segurança defensiva e instrutor.',

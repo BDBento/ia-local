@@ -1,6 +1,7 @@
 'use strict';
 
 const { isPrivateLabTarget, validateScope, validateTarget } = require('../shared/security-assessment');
+const { analyzePolicy } = require('../shared/bug-bounty-policy');
 
 const SECURITY_HEADERS = [
   ['strict-transport-security', 'HSTS ausente', 'medium', 'Defina Strict-Transport-Security após confirmar que todo o domínio usa HTTPS.'],
@@ -46,21 +47,28 @@ function analyzeResponse({ url, status, headers, cookies = [] }) {
 }
 
 function buildReport(result) {
-  const counts = result.findings.reduce((map, item) => ({ ...map, [item.severity]: (map[item.severity] || 0) + 1 }), {});
+  const candidates = result.findings.filter((item) => item.eligibility !== 'excluded');
+  const excluded = result.findings.filter((item) => item.eligibility === 'excluded');
+  const counts = candidates.reduce((map, item) => ({ ...map, [item.severity]: (map[item.severity] || 0) + 1 }), {});
   const lines = [
     '# Relatório preliminar de Bug Bounty', '', `**Alvo:** ${result.url}`, `**Status HTTP:** ${result.status}`,
-    `**Resumo:** ${counts.medium || 0} médio(s), ${counts.low || 0} baixo(s), ${counts.info || 0} informativo(s).`, '',
+    `**Resumo:** ${candidates.length} candidato(s) para validação e ${excluded.length} resultado(s) excluído(s) pela política.`,
+    `**Severidades dos candidatos:** ${counts.medium || 0} médio(s), ${counts.low || 0} baixo(s), ${counts.info || 0} informativo(s).`, '',
     '> Verificação automática não destrutiva. Confirme manualmente cada achado e as regras do programa antes de reportar.', '',
   ];
-  result.findings.forEach((finding, index) => lines.push(
+  candidates.forEach((finding, index) => lines.push(
     `## ${index + 1}. ${finding.title}`, '', `**Severidade sugerida:** ${finding.severity}`, '',
     `**Evidência:** ${finding.evidence}`, '', `**Recomendação:** ${finding.recommendation}`, '',
   ));
-  if (!result.findings.length) lines.push('Nenhum achado básico foi identificado nesta verificação.');
+  if (!candidates.length) lines.push('Nenhum candidato elegível foi identificado nesta verificação.', '');
+  if (excluded.length) {
+    lines.push('## Resultados não elegíveis segundo a política', '');
+    excluded.forEach((finding) => lines.push(`- ${finding.title}: ${finding.eligibilityReason}`));
+  }
   return lines.join('\n');
 }
 
-async function scanTarget({ target, allowedTargets, fetchImpl = globalThis.fetch }) {
+async function scanTarget({ target, allowedTargets, programPolicy = '', fetchImpl = globalThis.fetch }) {
   const url = normalizePublicTarget(target);
   if (!matchesAllowedTarget(url, allowedTargets)) throw new Error('O alvo não pertence à allowlist aprovada.');
   const controller = new AbortController();
@@ -71,7 +79,9 @@ async function scanTarget({ target, allowedTargets, fetchImpl = globalThis.fetch
       response = await fetchImpl(url, { method: 'GET', redirect: 'manual', signal: controller.signal, headers: { range: 'bytes=0-1023', 'user-agent': 'Farol-Security-Audit/1.0' } });
     }
     const cookies = typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : [];
-    const result = analyzeResponse({ url, status: response.status, headers: response.headers, cookies });
+    const rawResult = analyzeResponse({ url, status: response.status, headers: response.headers, cookies });
+    const policy = analyzePolicy(programPolicy);
+    const result = { ...rawResult, findings: rawResult.findings.map(policy.classify), policyMatchedRules: policy.matchedRules };
     return { ...result, report: buildReport(result), checkedAt: new Date().toISOString() };
   } catch (error) {
     if (error.name === 'AbortError') throw new Error('A auditoria excedeu o limite de 12 segundos.');

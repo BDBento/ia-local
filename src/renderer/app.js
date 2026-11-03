@@ -562,6 +562,7 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
       depth: byId('security-depth').value,
       engagement: byId('security-engagement').value,
       programUrl: byId('security-program-url').value,
+      programPolicy: byId('security-program-policy').value,
       allowedTargets: byId('security-allowed-targets').value,
       externalAccess: byId('security-external-access').checked,
       objective: byId('security-objective').value,
@@ -628,19 +629,23 @@ byId('security-run-scan').addEventListener('click', async () => {
     const result = await window.farolIA.runSecurityScan({
       target: currentSecurityPlan.target,
       allowedTargets: currentSecurityPlan.allowedTargets,
+      programPolicy: currentSecurityPlan.programPolicy,
       authorizationId: request.id,
       approvalToken: grant.approvalToken,
     });
     currentSecurityPlan.scanResult = result;
-    const counts = result.findings.reduce((map, item) => ({ ...map, [item.severity]: (map[item.severity] || 0) + 1 }), {});
-    byId('security-scan-summary').textContent = `${result.findings.length} achado(s)`;
+    const candidates = result.findings.filter((item) => item.eligibility !== 'excluded');
+    const excluded = result.findings.filter((item) => item.eligibility === 'excluded');
+    const counts = candidates.reduce((map, item) => ({ ...map, [item.severity]: (map[item.severity] || 0) + 1 }), {});
+    byId('security-scan-summary').textContent = `${candidates.length} candidato(s) · ${excluded.length} excluído(s)`;
     byId('security-scan-summary').title = `Médio: ${counts.medium || 0}; baixo: ${counts.low || 0}; informativo: ${counts.info || 0}`;
     status.textContent = `Verificação concluída em ${new Date(result.checkedAt).toLocaleString('pt-BR')}. Confirme manualmente antes de reportar.`;
     byId('security-findings').innerHTML = result.findings.length ? result.findings.map((finding) => `
-      <article class="finding-card ${escapeHtml(finding.severity)}">
-        <span>${escapeHtml(finding.severity)}</span><h3>${escapeHtml(finding.title)}</h3>
+      <article class="finding-card ${escapeHtml(finding.severity)} ${escapeHtml(finding.eligibility || 'unknown')}">
+        <span>${escapeHtml(finding.eligibility === 'excluded' ? 'NÃO ELEGÍVEL' : finding.severity)}</span><h3>${escapeHtml(finding.title)}</h3>
         <p><strong>Por que apareceu:</strong> ${escapeHtml(finding.evidence)}</p>
         <p><strong>Como corrigir:</strong> ${escapeHtml(finding.recommendation)}</p>
+        <p><strong>Política:</strong> ${escapeHtml(finding.eligibilityReason || 'Revisão manual necessária.')}</p>
       </article>`).join('') : '<div class="installed-empty">Nenhum achado básico foi identificado.</div>';
     await refreshAuthorizations();
   } catch (error) {
