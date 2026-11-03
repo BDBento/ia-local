@@ -32,6 +32,28 @@ function getInstallCommand(id) {
   return `winget install --id ${tool.packageId} --exact --accept-package-agreements --accept-source-agreements --silent`;
 }
 
+async function installTool(id) {
+  const tool = getTool(id);
+  const args = ['install', '--id', tool.packageId, '--exact', '--accept-package-agreements', '--accept-source-agreements', '--silent', '--disable-interactivity'];
+  try {
+    const { stdout, stderr } = await execFileAsync('winget.exe', args, {
+      windowsHide: true,
+      timeout: 10 * 60 * 1000,
+      maxBuffer: 1024 * 1024,
+      encoding: 'utf8',
+    });
+    return { tool: publicTool(tool, true), exitCode: 0, stdout, stderr };
+  } catch (error) {
+    if (error.killed || error.signal) throw new Error(`A instalação de ${tool.name} excedeu 10 minutos e foi encerrada.`);
+    return {
+      tool: publicTool(tool, false),
+      exitCode: Number.isInteger(error.code) ? error.code : 1,
+      stdout: String(error.stdout || ''),
+      stderr: String(error.stderr || error.message || 'Falha sem detalhes retornados pelo winget.'),
+    };
+  }
+}
+
 async function commandExists(executable) {
   try {
     await execFileAsync('where.exe', [executable], { windowsHide: true, timeout: 5000 });
@@ -45,4 +67,4 @@ async function listTools() {
   return Promise.all(Object.values(TOOLS).map(async (tool) => publicTool(tool, await commandExists(tool.executable))));
 }
 
-module.exports = { getInstallCommand, getTool, listTools, publicTool, TOOLS };
+module.exports = { getInstallCommand, getTool, installTool, listTools, publicTool, TOOLS };

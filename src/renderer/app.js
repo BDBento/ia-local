@@ -228,7 +228,7 @@ function renderAuthorizations() {
   container.innerHTML = state.authorizations.length
     ? state.authorizations.map((item) => `
       <div class="authorization-item">
-        <div><strong>${escapeHtml(item.target)}</strong><small>${item.kind === 'terminal-command' ? 'Comando de terminal' : item.kind === 'security-scan' ? 'Auditoria Bug Bounty' : 'Download de modelo'} · ${new Date(item.createdAt).toLocaleString('pt-BR')}</small></div>
+        <div><strong>${escapeHtml(item.target)}</strong><small>${item.kind === 'terminal-command' ? 'Comando de terminal' : item.kind === 'security-scan' ? 'Auditoria Bug Bounty' : item.kind === 'security-tool-install' ? 'Instalação supervisionada' : 'Download de modelo'} · ${new Date(item.createdAt).toLocaleString('pt-BR')}</small></div>
         <span class="authorization-status ${escapeHtml(item.status)}">${escapeHtml(labels[item.status] || item.status)}</span>
       </div>
     `).join('')
@@ -666,7 +666,7 @@ byId('security-tools-list').addEventListener('click', async (event) => {
     if (state.config?.terminalToolsEnabled !== true) throw new Error('Ative “Terminal para a IA” em Configurações antes de instalar ferramentas.');
     const command = await window.farolIA.getSecurityToolInstallCommand(tool.id);
     const request = await window.farolIA.requestAuthorization({
-      kind: 'terminal-command', target: command,
+      kind: 'security-tool-install', toolId: tool.id, target: command,
       reason: `Instalar ${tool.name} pelo catálogo oficial do Windows Package Manager.`,
     });
     const approved = await askTerminalAuthorization({ command, reason: request.reason });
@@ -677,7 +677,7 @@ byId('security-tools-list').addEventListener('click', async (event) => {
     }
     const grant = await window.farolIA.decideAuthorization({ id: request.id, decision: 'approve' });
     status.textContent = `Instalando ${tool.name}...`;
-    const result = await window.farolIA.executeTerminal({ command, authorizationId: request.id, approvalToken: grant.approvalToken });
+    const result = await window.farolIA.installSecurityTool({ toolId: tool.id, authorizationId: request.id, approvalToken: grant.approvalToken });
     if (result.exitCode !== 0) throw new Error(result.stderr || `A instalação terminou com código ${result.exitCode}.`);
     status.textContent = `${tool.name} instalado. Verificando disponibilidade...`;
     await refreshAuthorizations();

@@ -138,15 +138,17 @@ function registerIpc() {
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('guardian:authorizations', () => authorizationManager.list());
   ipcMain.handle('guardian:authorization-request', (_event, input) => {
-    if (!['model-download', 'terminal-command', 'security-scan'].includes(input?.kind)) throw new Error('Tipo de autorização não permitido.');
-    if (input.kind === 'terminal-command' && !currentConfig.terminalToolsEnabled) {
+    if (!['model-download', 'terminal-command', 'security-scan', 'security-tool-install'].includes(input?.kind)) throw new Error('Tipo de autorização não permitido.');
+    if (['terminal-command', 'security-tool-install'].includes(input.kind) && !currentConfig.terminalToolsEnabled) {
       throw new Error('As ferramentas de terminal estão desativadas nas configurações.');
     }
     const target = input.kind === 'model-download'
       ? ollama.validateModelName(input?.target)
       : input.kind === 'security-scan'
         ? bugBountyScanner.normalizePublicTarget(input?.target)
-        : terminal.validateCommand(input?.target);
+        : input.kind === 'security-tool-install'
+          ? securityTools.getInstallCommand(input?.toolId)
+          : terminal.validateCommand(input?.target);
     return authorizationManager.request({
       kind: input.kind,
       target,
@@ -154,7 +156,9 @@ function registerIpc() {
         ? 'Baixar um modelo por meio do Ollama requer acesso à internet.'
         : input.kind === 'security-scan'
           ? 'Executar auditoria HTTP não destrutiva no alvo autorizado.'
-          : String(input?.reason || 'A IA solicitou a execução deste comando local.').slice(0, 300),
+          : input.kind === 'security-tool-install'
+            ? `Instalar ${securityTools.getTool(input?.toolId).name} pelo catálogo oficial do Windows Package Manager.`
+            : String(input?.reason || 'A IA solicitou a execução deste comando local.').slice(0, 300),
     });
   });
   ipcMain.handle('guardian:authorization-decision', (_event, input) => {
@@ -173,6 +177,22 @@ function registerIpc() {
       return await bugBountyScanner.scanTarget({ target, allowedTargets: input?.allowedTargets });
     } finally {
       sendNetworkActivity(false);
+    }
+  }));
+  ipcMain.handle('security:tool-install', async (_event, input) => runExclusive(async () => {
+    if (!currentConfig.terminalToolsEnabled) throw new Error('As ferramentas de terminal estão desativadas.');
+    const command = securityTools.getInstallCommand(input?.toolId);
+    await authorizationManager.consume({
+      id: input?.authorizationId,
+      approvalToken: input?.approvalToken,
+      kind: 'security-tool-install',
+      target: command,
+    });
+    sendNetworkActivity(true, `Instalando ${securityTools.getTool(input?.toolId).name}`);
+    try {
+      return await securityTools.installTool(input?.toolId);
+    } finally {
+      sendNetworkActivity(false, 'Instalação finalizada');
     }
   }));
   ipcMain.handle('settings:save', async (_event, input) => {
