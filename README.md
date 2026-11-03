@@ -2,7 +2,7 @@
 
 Aplicativo desktop para instalar, executar e conversar com modelos de IA no próprio computador usando [Ollama](https://ollama.com). O projeto prioriza privacidade, funcionamento local, controle humano sobre ferramentas e adaptação ao hardware disponível.
 
-> Projeto em desenvolvimento. Revise cuidadosamente comandos de terminal e mantenha cópias de segurança dos seus arquivos.
+> Estado do projeto: versão `0.7.0`, em desenvolvimento. Revise cuidadosamente comandos de terminal e mantenha cópias de segurança dos seus arquivos.
 
 ## Recursos
 
@@ -16,7 +16,8 @@ Aplicativo desktop para instalar, executar e conversar com modelos de IA no pró
 - ferramenta PowerShell opcional para modelos com *tool calling*;
 - confirmação humana individual antes de cada comando;
 - autorização de uso único com expiração e auditoria local;
-- sincronização de modelos e contexto com projetos do VS Code por meio do Continue;
+- sincronização local de modelos e contexto com projetos do VS Code por meio do Continue;
+- biblioteca local de conhecimento a partir de PDFs, com arquivo e página como fontes;
 - indicador permanente do estado de rede;
 - diagnóstico do Guardião de rede nativo para Windows.
 
@@ -30,9 +31,10 @@ O terminal da IA é opcional e vem desligado. Quando habilitado:
 - o usuário precisa autorizar cada uso;
 - o token de autorização vale uma única vez e expira;
 - comandos executam sem perfil interativo, com limite de 30 segundos e 64 KB de saída;
-- resultados brutos do terminal não entram nas conversas salvas.
+- resultados brutos do terminal não entram nas conversas salvas;
+- o farol fica vermelho durante toda a execução autorizada.
 
-O Guardião WFP ainda está em modo de diagnóstico. Portanto, comandos autorizados executam com as permissões e o acesso de rede normais da conta do Windows. O aplicativo ainda não garante isolamento de rede por processo. Não autorize comandos que você não compreende.
+O Guardião WFP ainda está em modo de diagnóstico. Portanto, comandos autorizados executam com as permissões e o acesso de rede normais da conta do Windows. A confirmação do comando é também a autorização prévia para os acessos que ele possa realizar, e o farol fica vermelho enquanto o PowerShell estiver ativo. O aplicativo ainda não garante isolamento de rede por processo. Não autorize comandos que você não compreende.
 
 ## Requisitos
 
@@ -40,6 +42,7 @@ O Guardião WFP ainda está em modo de diagnóstico. Portanto, comandos autoriza
 - Node.js 22 ou superior;
 - Ollama instalado e em execução;
 - pelo menos um modelo local para conversar;
+- PDFs com camada de texto para uso na biblioteca (OCR ainda não incluído);
 - .NET SDK 9 apenas para compilar o Guardião nativo.
 
 Modelos maiores precisam de mais memória. A classificação exibida pelo aplicativo é uma estimativa, não uma garantia. Quantização, tamanho do contexto e programas abertos também afetam o consumo.
@@ -84,6 +87,12 @@ Use os controles **Salvar**, **Abrir**, **Nova** e **Excluir** na tela de conver
 
 Os dados ficam na pasta de dados do aplicativo, fora do repositório. Arquivos como `conversations.json`, `config.json` e `security-audit.jsonl` são ignorados pelo Git.
 
+## Biblioteca local de PDFs
+
+Na tela **Biblioteca**, adicione documentos de até 25 MB e 500 páginas. O PDF.js extrai o texto em um processo separado, com limite de memória e tempo. O arquivo original não é copiado: ficam armazenados localmente apenas metadados e trechos extraídos.
+
+Durante a conversa, o Farol procura trechos relacionados à pergunta e os envia ao modelo como referências não confiáveis. A resposta mostra arquivo e página. Conteúdo escrito no PDF não autoriza internet, terminal nem alterações no computador. Esse processo é RAG e não altera os pesos do modelo. PDFs compostos apenas por imagens ainda precisam de OCR.
+
 ## Farol no VS Code
 
 Para usar os modelos locais no VS Code quando serviços online estiverem indisponíveis:
@@ -94,7 +103,7 @@ Para usar os modelos locais no VS Code quando serviços online estiverem indispo
 4. clique em **Integrar e abrir no VS Code**;
 5. o Farol prepara a integração e abre um guia simples dentro do editor.
 
-Nos bastidores, a integração utiliza a extensão livre [Continue](https://marketplace.visualstudio.com/items?itemName=Continue.continue) para conectar o VS Code ao Ollama em `127.0.0.1:11434`. Se já existir uma configuração dessa extensão, ela é preservada.
+Nos bastidores, a integração prepara uma configuração para a extensão livre [Continue](https://marketplace.visualstudio.com/items?itemName=Continue.continue), conectada ao Ollama em `127.0.0.1:11434`. O Farol não baixa nem instala a extensão automaticamente: ele apenas verifica se já está instalada, grava os arquivos locais e abre o guia no VS Code. Se já existir uma configuração, ela é preservada.
 
 Para tarefas com arquivos e terminal, use o modo Agent do Continue e mantenha a confirmação de ferramentas ativada.
 
@@ -125,7 +134,7 @@ native/Farol.NetworkGuardian/  Componente nativo e planejamento WFP
 src/main/                     Processo principal, Ollama e persistência
 src/renderer/                 Interface Electron
 src/shared/                   Catálogo e recomendações
-test/                         Testes automatizados
+test/                         Testes automatizados, incluindo extração real de PDF
 ```
 
 ## Dados que não devem ser publicados
@@ -147,7 +156,8 @@ O `.gitignore` cobre os formatos comuns, mas não substitui uma revisão antes d
 - o isolamento WFP ainda não está ativo;
 - qualidade e suporte a ferramentas variam por modelo;
 - modelos grandes podem não carregar em máquinas com pouca RAM ou VRAM;
-- a configuração gerada para o Continue exige ativação inicial no editor.
+- a configuração gerada para o Continue exige ativação inicial no editor;
+- PDFs escaneados sem camada de texto ainda exigem OCR.
 
 ## Uso responsável
 

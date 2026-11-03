@@ -19,6 +19,19 @@ test('salva somente mensagens úteis para contexto futuro', () => {
   ]);
 });
 
+test('preserva fontes locais com valores limitados e normalizados', () => {
+  const [message] = cleanMessages([{
+    role: 'assistant',
+    content: 'resposta baseada no documento',
+    sources: [{ documentId: 'abc', name: 'manual.pdf', pageNumber: '7' }],
+  }]);
+  assert.deepEqual(message.sources, [{
+    documentId: 'abc',
+    name: 'manual.pdf',
+    pageNumber: 7,
+  }]);
+});
+
 test('cria, atualiza, lista, abre e exclui uma conversa local', async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'farol-conversations-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));

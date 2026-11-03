@@ -88,6 +88,9 @@ function createKnowledgeBase(rootPath, { parsePdf }) {
     if (busy) throw new Error('Já existe um PDF sendo processado.');
     busy = true;
     try {
+      const stats = await fs.stat(filePath);
+      if (!stats.isFile()) throw new Error('O caminho selecionado não é um arquivo.');
+      if (stats.size > 25 * 1024 * 1024) throw new Error('O PDF ultrapassa o limite atual de 25 MB.');
       const bytes = await fs.readFile(filePath);
       const hash = crypto.createHash('sha256').update(bytes).digest('hex');
       if (documents.some((document) => document.hash === hash)) {

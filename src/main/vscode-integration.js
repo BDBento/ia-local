@@ -91,6 +91,19 @@ async function findVsCodeExecutable(environment = process.env) {
   throw new Error('VS Code não encontrado. Instale-o ou use a sincronização manual.');
 }
 
+async function detectContinueExtension(executable, executor = execFileAsync) {
+  try {
+    const { stdout } = await executor(executable, ['--list-extensions'], {
+      timeout: 30 * 1000,
+      windowsHide: true,
+      encoding: 'utf8',
+    });
+    return String(stdout).split(/\r?\n/).some((item) => item.trim().toLowerCase() === 'continue.continue');
+  } catch {
+    return false;
+  }
+}
+
 async function setupVsCode({ projectPath, models, conversation, environment }) {
   const synced = await syncProject({ projectPath, models, conversation });
   const runtimeEnvironment = environment || process.env;
@@ -108,18 +121,16 @@ async function setupVsCode({ projectPath, models, conversation, environment }) {
       continueConfigInstalled = true;
     }
   }
-  let extensionInstalled = true;
-  try {
-    await execFileAsync(executable, ['--install-extension', 'Continue.continue', '--force'], {
-      timeout: 2 * 60 * 1000,
-      windowsHide: true,
-    });
-  } catch {
-    extensionInstalled = false;
-  }
+  const extensionInstalled = await detectContinueExtension(executable);
   const guidePath = path.join(synced.projectPath, '.continue', 'FAROL-VSCODE.md');
   execFile(executable, [synced.projectPath, guidePath], { windowsHide: true }, () => {});
-  return { ...synced, extensionInstalled, continueConfigInstalled, vscodeOpened: true };
+  return {
+    ...synced,
+    extensionInstalled,
+    extensionInstallAttempted: false,
+    continueConfigInstalled,
+    vscodeOpened: true,
+  };
 }
 
-module.exports = { buildContinueConfig, buildConversationContext, findVsCodeExecutable, setupVsCode, syncProject };
+module.exports = { buildContinueConfig, buildConversationContext, detectContinueExtension, findVsCodeExecutable, setupVsCode, syncProject };

@@ -53,6 +53,23 @@ test('token aprovado vale uma única vez e apenas para o destino autorizado', as
   assert.deepEqual(audit.map((entry) => entry.type), ['requested', 'approved', 'consumed']);
 });
 
+test('autorização de terminal fica presa ao comando exato', async () => {
+  const { manager } = fixture();
+  const request = await manager.request({ kind: 'terminal-command', target: 'Get-Date' });
+  const grant = await manager.decide(request.id, 'approve');
+  await assert.rejects(
+    manager.consume({ id: request.id, kind: 'terminal-command', target: 'Invoke-WebRequest example.com', approvalToken: grant.approvalToken }),
+    /não corresponde/,
+  );
+  const consumed = await manager.consume({
+    id: request.id,
+    kind: 'terminal-command',
+    target: 'Get-Date',
+    approvalToken: grant.approvalToken,
+  });
+  assert.equal(consumed.status, 'consumed');
+});
+
 test('recusa é definitiva', async () => {
   const { manager } = fixture();
   const request = await manager.request({ kind: 'model-download', target: 'qwen3:4b' });

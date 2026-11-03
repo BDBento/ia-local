@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { buildContinueConfig, buildConversationContext, syncProject } = require('../src/main/vscode-integration');
+const { buildContinueConfig, buildConversationContext, detectContinueExtension, syncProject } = require('../src/main/vscode-integration');
 
 test('gera configuração Continue apontando somente para o Ollama local', () => {
   const yaml = buildContinueConfig([{ name: 'qwen2.5-coder:7b' }, { name: 'deepseek-r1:8b' }]);
@@ -21,6 +21,16 @@ test('transforma conversa salva em regra de contexto', () => {
   });
   assert.match(markdown, /name: Contexto salvo pelo Farol/);
   assert.match(markdown, /Use SQLite/);
+});
+
+test('apenas consulta extensões locais, sem solicitar instalação automática', async () => {
+  let receivedArguments;
+  const installed = await detectContinueExtension('Code.exe', async (_executable, args) => {
+    receivedArguments = args;
+    return { stdout: 'editorconfig.editorconfig\nContinue.continue\n' };
+  });
+  assert.equal(installed, true);
+  assert.deepEqual(receivedArguments, ['--list-extensions']);
 });
 
 test('sincroniza sem apagar recomendações existentes do VS Code', async (t) => {

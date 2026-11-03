@@ -10,6 +10,13 @@ function cleanMessages(messages) {
     .map((message) => ({
       role: message.role,
       content: String(message.content || '').slice(0, 50000),
+      ...(Array.isArray(message.sources) ? {
+        sources: message.sources.slice(0, 10).map((source) => ({
+          documentId: String(source?.documentId || '').slice(0, 64),
+          name: String(source?.name || '').slice(0, 240),
+          pageNumber: Math.max(1, Number.parseInt(source?.pageNumber, 10) || 1),
+        })),
+      } : {}),
     }))
     .filter((message) => message.content.trim())
     .slice(-200);
