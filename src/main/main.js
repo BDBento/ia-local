@@ -11,6 +11,7 @@ const { recommendModels } = require('../shared/recommender');
 const terminal = require('./terminal');
 const { createConversationStore } = require('./conversation-store');
 const vscodeIntegration = require('./vscode-integration');
+const { createAssessmentPlan } = require('../shared/security-assessment');
 
 let mainWindow;
 let configStore;
@@ -91,6 +92,7 @@ async function getState() {
 
 function registerIpc() {
   ipcMain.handle('app:get-initial-state', getState);
+  ipcMain.handle('security:create-plan', (_event, input) => createAssessmentPlan(input));
   ipcMain.handle('ollama:refresh', getState);
   ipcMain.handle('conversations:list', () => conversationStore.list());
   ipcMain.handle('conversations:storage-path', () => conversationStore.getStoragePath());

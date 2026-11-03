@@ -19,6 +19,8 @@ const state = {
 const byId = (id) => document.getElementById(id);
 const pageTitles = { chat: 'Conversa local', models: 'Gerenciar modelos', training: 'Laboratório', settings: 'Configurações' };
 pageTitles.guardian = 'Guardião de rede';
+pageTitles.security = 'Modo Pentest';
+let currentSecurityPlan = null;
 
 function setBeacon(mode, customLabel = '') {
   const beacon = byId('privacy-beacon');
@@ -453,6 +455,84 @@ async function removeModel(model) {
 }
 
 document.querySelectorAll('.nav-button').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
+byId('security-engagement').addEventListener('change', () => {
+  const isBugBounty = byId('security-engagement').value === 'bug-bounty';
+  const isRedTeam = byId('security-engagement').value === 'red-team';
+  byId('bug-bounty-fields').classList.toggle('hidden', !isBugBounty);
+  byId('red-team-fields').classList.toggle('hidden', !isRedTeam);
+  byId('security-program-url').required = isBugBounty;
+  byId('security-allowed-targets').required = isBugBounty;
+  byId('security-objective').required = isRedTeam;
+  byId('security-roe').required = isRedTeam;
+  byId('security-operation-window').required = isRedTeam;
+  byId('security-stop-conditions').required = isRedTeam;
+  if (isBugBounty) byId('security-external-access').checked = true;
+});
+byId('security-intensity').addEventListener('change', () => {
+  const destructive = byId('security-intensity').value === 'destructive-lab';
+  byId('destructive-lab-fields').classList.toggle('hidden', !destructive);
+  byId('security-recovery-plan').required = destructive;
+  byId('security-destructive-confirmation').required = destructive;
+  if (destructive) byId('security-external-access').checked = false;
+  byId('red-team-safety-copy').textContent = destructive
+    ? 'Ações destrutivas ficam restritas aos ativos sintéticos do laboratório isolado, com recuperação testada e confirmação por comando.'
+    : 'Coleta, credenciais e exfiltração usam dados sintéticos. Persistência oculta e indisponibilidade não são permitidas.';
+});
+byId('security-plan-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const status = byId('security-plan-status');
+  status.textContent = 'Validando escopo...';
+  try {
+    currentSecurityPlan = await window.farolIA.createSecurityPlan({
+      target: byId('security-target').value,
+      owner: byId('security-owner').value,
+      method: byId('security-method').value,
+      depth: byId('security-depth').value,
+      engagement: byId('security-engagement').value,
+      programUrl: byId('security-program-url').value,
+      allowedTargets: byId('security-allowed-targets').value,
+      externalAccess: byId('security-external-access').checked,
+      objective: byId('security-objective').value,
+      rulesOfEngagement: byId('security-roe').value,
+      operationWindow: byId('security-operation-window').value,
+      stopConditions: byId('security-stop-conditions').value,
+      intensity: byId('security-intensity').value,
+      isolatedLab: byId('security-isolated-lab').checked,
+      recoverableSnapshot: byId('security-recoverable-snapshot').checked,
+      recoveryPlan: byId('security-recovery-plan').value,
+      destructiveConfirmation: byId('security-destructive-confirmation').value,
+      excluded: byId('security-excluded').value,
+      authorized: byId('security-authorized').checked,
+    });
+    byId('security-plan-title').textContent = `${currentSecurityPlan.methodLabel} · ${currentSecurityPlan.target}`;
+    byId('security-plan-depth').textContent = currentSecurityPlan.depthLabel;
+    byId('security-plan-excluded').textContent = currentSecurityPlan.excluded;
+    byId('security-plan-network').textContent = currentSecurityPlan.externalAccess
+      ? `Permitido sob confirmação · ${currentSecurityPlan.allowedTargets.join(', ')}`
+      : 'Bloqueado para esta sessão';
+    byId('security-plan-phases').innerHTML = currentSecurityPlan.phases.map((phase, index) => `<div><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(phase)}</strong></div>`).join('');
+    byId('security-plan-result').classList.remove('hidden');
+    status.textContent = 'Modo Pentest preparado com escopo validado.';
+    byId('security-plan-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    currentSecurityPlan = null;
+    status.textContent = error.message || 'Não foi possível criar o plano.';
+  }
+});
+byId('security-open-chat').addEventListener('click', () => {
+  if (!currentSecurityPlan) return;
+  if (currentSecurityPlan.externalAccess && state.config?.terminalToolsEnabled !== true) {
+    byId('security-plan-status').textContent = 'Ative “Terminal para a IA” em Configurações para usar ferramentas externas com confirmação.';
+  }
+  byId('chat-input').value = currentSecurityPlan.prompt;
+  switchView('chat');
+  byId('chat-input').focus();
+});
+byId('security-copy-prompt').addEventListener('click', async () => {
+  if (!currentSecurityPlan) return;
+  await navigator.clipboard.writeText(currentSecurityPlan.prompt);
+  byId('security-plan-status').textContent = 'Instruções copiadas.';
+});
 byId('new-conversation').addEventListener('click', async () => {
   if (state.messages.length) {
     const decision = await showConversationDialog({

@@ -22,6 +22,7 @@
           <button class="nav-button active" data-view="chat">Conversa</button>
           <button class="nav-button" data-view="models">Modelos</button>
           <button class="nav-button" data-view="training">Laboratório</button>
+          <button class="nav-button" data-view="security">Modo Pentest</button>
           <button class="nav-button" data-view="guardian">Guardião</button>
           <button class="nav-button" data-view="settings">Configurações</button>
         </nav>
@@ -177,6 +178,88 @@
               <button id="training-submit" class="primary-button" type="submit">Criar modelo personalizado</button>
             </div>
           </form>
+        </section>
+
+        <section id="view-security" class="view" aria-labelledby="page-title">
+          <div class="security-hero">
+            <div>
+              <p class="eyebrow">FAROL SECURITY LAB</p>
+              <h2>Modo Pentest</h2>
+              <p class="section-description">Avaliações autorizadas com escopo explícito e metodologia reconhecida. O Farol ensina cada etapa e nunca inicia testes automaticamente.</p>
+            </div>
+            <span class="security-edition">DEFENSIVE EDITION</span>
+          </div>
+
+          <div class="security-layout">
+            <form id="security-plan-form" class="panel security-form">
+              <div class="panel-heading">
+                <div><p class="eyebrow">1 · AUTORIZAÇÃO E ESCOPO</p><h2>Novo projeto de avaliação</h2></div>
+                <span class="one-use-badge">HUMANO NO CONTROLE</span>
+              </div>
+              <div class="field-grid security-fields">
+                <label>Modalidade<select id="security-engagement"><option value="private">Pentest privado</option><option value="bug-bounty">Bug Bounty</option><option value="red-team">Red Team</option></select></label>
+                <label>Alvo autorizado<input id="security-target" type="text" maxlength="253" placeholder="app.exemplo.local ou 192.168.1.0/24" required></label>
+                <label>Responsável pela autorização<input id="security-owner" type="text" maxlength="120" placeholder="Nome ou organização" required></label>
+                <label>Metodologia<select id="security-method"><option value="web">Aplicação web · OWASP WSTG</option><option value="api">API · OWASP API Top 10</option><option value="network">Rede e serviços</option><option value="host">Host local</option></select></label>
+                <label>Profundidade<select id="security-depth"><option value="passive">Somente observação</option><option value="standard">Padrão não destrutivo</option></select></label>
+              </div>
+              <div id="bug-bounty-fields" class="bug-bounty-fields hidden">
+                <label class="full-field">Página oficial do programa
+                  <input id="security-program-url" type="url" maxlength="500" placeholder="https://plataforma.example/programa">
+                </label>
+                <label class="full-field">Allowlist externa
+                  <textarea id="security-allowed-targets" rows="3" maxlength="4000" placeholder="*.example.com, api.example.com"></textarea>
+                  <small>Somente estes destinos poderão constar no plano. Separe por vírgula ou linha.</small>
+                </label>
+              </div>
+              <div id="red-team-fields" class="red-team-fields hidden">
+                <p class="eyebrow">PLANO DE OPERAÇÃO RED TEAM</p>
+                <label class="full-field">Objetivo da simulação
+                  <textarea id="security-objective" rows="3" maxlength="500" placeholder="Ex.: avaliar detecção e resposta a acesso inicial controlado"></textarea>
+                </label>
+                <label class="full-field">Regras de engajamento aprovadas
+                  <textarea id="security-roe" rows="4" maxlength="1500" placeholder="Técnicas, sistemas, contas de teste e limites expressamente autorizados"></textarea>
+                </label>
+                <div class="field-grid">
+                  <label>Janela operacional<input id="security-operation-window" type="text" maxlength="200" placeholder="Ex.: seg–sex, 09h–17h BRT"></label>
+                  <label>Condições de parada<input id="security-stop-conditions" type="text" maxlength="1000" placeholder="Ex.: impacto, dado real ou alerta crítico"></label>
+                  <label>Intensidade<select id="security-intensity"><option value="standard">Controlada</option><option value="aggressive">Agressiva autorizada</option><option value="destructive-lab">Destrutiva · somente laboratório</option></select></label>
+                </div>
+                <div id="destructive-lab-fields" class="destructive-lab-fields hidden">
+                  <label class="scope-consent"><input id="security-isolated-lab" type="checkbox"><span><strong>Laboratório isolado e próprio</strong><small>Não contém produção, terceiros ou dados reais.</small></span></label>
+                  <label class="scope-consent"><input id="security-recoverable-snapshot" type="checkbox"><span><strong>Snapshot ou backup testado</strong><small>A recuperação foi verificada antes do exercício.</small></span></label>
+                  <label class="full-field">Plano de recuperação<textarea id="security-recovery-plan" rows="3" maxlength="1500" placeholder="Como restaurar cada ativo e quem pode acionar a recuperação"></textarea></label>
+                  <label class="full-field">Confirmação digitada<input id="security-destructive-confirmation" type="text" autocomplete="off" placeholder="AUTORIZO EXERCICIO DESTRUTIVO EM LABORATORIO"><small>Digite exatamente a frase acima. Uma nova confirmação ainda será exigida por comando.</small></label>
+                </div>
+                <div class="red-team-warning"><strong>Simulação segura</strong><span id="red-team-safety-copy">Coleta, credenciais e exfiltração usam dados sintéticos. Persistência oculta e indisponibilidade não são permitidas.</span></div>
+              </div>
+              <label class="full-field">Fora do escopo
+                <textarea id="security-excluded" rows="3" maxlength="500" placeholder="IPs, rotas, contas, horários ou técnicas proibidas"></textarea>
+              </label>
+              <label class="scope-consent"><input id="security-authorized" type="checkbox" required><span><strong>Confirmo que sou proprietário ou tenho autorização formal</strong><small>Testes em sistemas de terceiros sem permissão não são aceitos.</small></span></label>
+              <label class="scope-consent"><input id="security-external-access" type="checkbox"><span><strong>Autorizar acesso externo nesta sessão</strong><small>O acesso ocorrerá somente por comandos exibidos e aprovados individualmente. O chat permanece local.</small></span></label>
+              <div class="form-actions"><span id="security-plan-status" role="status"></span><button class="primary-button" type="submit">Ativar e gerar plano</button></div>
+            </form>
+
+            <aside class="panel security-principles">
+              <p class="eyebrow">CONTROLES DO MODO</p>
+              <h2>Seguro por padrão</h2>
+              <div class="principle-list">
+                <div><span>01</span><p><strong>Sem piloto automático</strong><small>Cada comando é explicado e confirmado.</small></p></div>
+                <div><span>02</span><p><strong>Sem técnicas destrutivas</strong><small>DoS, persistência e evasão ficam fora do fluxo.</small></p></div>
+                <div><span>03</span><p><strong>Evidência local</strong><small>Dados e relatórios permanecem no computador.</small></p></div>
+                <div><span>04</span><p><strong>Aprendizado durante o teste</strong><small>Objetivo, risco e correção acompanham cada etapa.</small></p></div>
+              </div>
+            </aside>
+          </div>
+
+          <article id="security-plan-result" class="panel security-plan-result hidden" aria-live="polite">
+            <div class="panel-heading"><div><p class="eyebrow">2 · PLANO DE TRABALHO</p><h2 id="security-plan-title">Plano preparado</h2></div><span id="security-plan-depth" class="info-pill"></span></div>
+            <div id="security-plan-phases" class="phase-list"></div>
+            <div class="scope-summary"><span>Fora do escopo</span><strong id="security-plan-excluded"></strong></div>
+            <div class="scope-summary"><span>Acesso externo</span><strong id="security-plan-network"></strong></div>
+            <div class="form-actions"><button id="security-copy-prompt" class="secondary-button" type="button">Copiar instruções</button><button id="security-open-chat" class="primary-button" type="button">Iniciar sessão didática</button></div>
+          </article>
         </section>
 
         <section id="view-guardian" class="view" aria-labelledby="page-title">

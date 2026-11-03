@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('farolIA', {
   getInitialState: () => ipcRenderer.invoke('app:get-initial-state'),
+  createSecurityPlan: (input) => ipcRenderer.invoke('security:create-plan', input),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   refreshOllama: () => ipcRenderer.invoke('ollama:refresh'),
   sendChat: (payload) => ipcRenderer.invoke('ollama:chat', payload),
