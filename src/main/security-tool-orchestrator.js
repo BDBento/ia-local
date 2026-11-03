@@ -45,6 +45,15 @@ async function installTool(id) {
     return { tool: publicTool(tool, true), exitCode: 0, stdout, stderr };
   } catch (error) {
     if (error.killed || error.signal) throw new Error(`A instalação de ${tool.name} excedeu 10 minutos e foi encerrada.`);
+    if (await packageInstalled(tool)) {
+      return {
+        tool: publicTool(tool, true),
+        exitCode: 0,
+        stdout: String(error.stdout || `O ${tool.name} já está instalado.`),
+        stderr: '',
+        alreadyInstalled: true,
+      };
+    }
     return {
       tool: publicTool(tool, false),
       exitCode: Number.isInteger(error.code) ? error.code : 1,
@@ -63,8 +72,23 @@ async function commandExists(executable) {
   }
 }
 
-async function listTools() {
-  return Promise.all(Object.values(TOOLS).map(async (tool) => publicTool(tool, await commandExists(tool.executable))));
+function outputContainsPackage(output, packageId) {
+  return String(output || '').toLowerCase().includes(String(packageId || '').toLowerCase());
 }
 
-module.exports = { getInstallCommand, getTool, installTool, listTools, publicTool, TOOLS };
+async function packageInstalled(tool) {
+  try {
+    const { stdout } = await execFileAsync('winget.exe', [
+      'list', '--id', tool.packageId, '--exact', '--accept-source-agreements', '--disable-interactivity',
+    ], { windowsHide: true, timeout: 30000, maxBuffer: 256 * 1024, encoding: 'utf8' });
+    return outputContainsPackage(stdout, tool.packageId);
+  } catch {
+    return commandExists(tool.executable);
+  }
+}
+
+async function listTools() {
+  return Promise.all(Object.values(TOOLS).map(async (tool) => publicTool(tool, await packageInstalled(tool))));
+}
+
+module.exports = { getInstallCommand, getTool, installTool, listTools, outputContainsPackage, publicTool, TOOLS };
