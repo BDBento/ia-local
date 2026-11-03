@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('farolIA', {
   getInitialState: () => ipcRenderer.invoke('app:get-initial-state'),
   createSecurityPlan: (input) => ipcRenderer.invoke('security:create-plan', input),
   runSecurityScan: (input) => ipcRenderer.invoke('security:scan', input),
+  listSecurityTools: () => ipcRenderer.invoke('security:tools'),
+  getSecurityToolInstallCommand: (id) => ipcRenderer.invoke('security:tool-install-command', id),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   refreshOllama: () => ipcRenderer.invoke('ollama:refresh'),
   sendChat: (payload) => ipcRenderer.invoke('ollama:chat', payload),

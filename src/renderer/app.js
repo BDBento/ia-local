@@ -14,6 +14,7 @@ const state = {
   activeConversationTitle: '',
   vscodeProjectPath: '',
   conversationStoragePath: '',
+  securityTools: [],
   knowledge: [],
 };
 
@@ -48,6 +49,22 @@ function switchView(name) {
   document.querySelectorAll('.nav-button').forEach((button) => button.classList.toggle('active', button.dataset.view === name));
   byId(`view-${name}`).classList.add('active');
   byId('page-title').textContent = pageTitles[name];
+}
+
+async function refreshSecurityTools() {
+  const status = byId('security-tools-status');
+  status.textContent = 'Verificando ferramentas locais...';
+  try {
+    state.securityTools = await window.farolIA.listSecurityTools();
+    byId('security-tools-list').innerHTML = state.securityTools.map((tool) => `
+      <article class="security-tool-card">
+        <div><span class="tool-state ${tool.installed ? 'installed' : ''}">${tool.installed ? 'INSTALADA' : 'NÃO INSTALADA'}</span><h3>${escapeHtml(tool.name)}</h3><p>${escapeHtml(tool.purpose)}</p><small>${escapeHtml(tool.risk)}</small></div>
+        <button class="${tool.installed ? 'secondary-button' : 'primary-button'}" type="button" data-install-security-tool="${escapeHtml(tool.id)}" ${tool.installed ? 'disabled' : ''}>${tool.installed ? 'Disponível' : 'Revisar instalação'}</button>
+      </article>`).join('');
+    status.textContent = 'Catálogo verificado localmente.';
+  } catch (error) {
+    status.textContent = error.message || 'Não foi possível verificar as ferramentas.';
+  }
 }
 
 function renderHardware() {
@@ -568,6 +585,8 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
     byId('security-plan-phases').innerHTML = currentSecurityPlan.phases.map((phase, index) => `<div><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(phase)}</strong></div>`).join('');
     byId('security-plan-result').classList.remove('hidden');
     byId('bug-bounty-auto-actions').classList.toggle('hidden', currentSecurityPlan.engagement !== 'bug-bounty');
+    byId('security-tools-panel').classList.toggle('hidden', !['bug-bounty', 'private'].includes(currentSecurityPlan.engagement));
+    if (['bug-bounty', 'private'].includes(currentSecurityPlan.engagement)) await refreshSecurityTools();
     status.textContent = 'Modo Pentest preparado com escopo validado.';
     byId('security-plan-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
@@ -635,6 +654,37 @@ byId('security-copy-report').addEventListener('click', async () => {
   if (!report) return;
   await navigator.clipboard.writeText(report);
   byId('security-scan-status').textContent = 'Rascunho copiado. Valide o achado e adapte ao formato do programa antes de enviar.';
+});
+byId('security-refresh-tools').addEventListener('click', refreshSecurityTools);
+byId('security-tools-list').addEventListener('click', async (event) => {
+  const button = event.target.closest('[data-install-security-tool]');
+  if (!button) return;
+  const tool = state.securityTools.find((item) => item.id === button.dataset.installSecurityTool);
+  if (!tool || tool.installed) return;
+  const status = byId('security-tools-status');
+  try {
+    if (state.config?.terminalToolsEnabled !== true) throw new Error('Ative “Terminal para a IA” em Configurações antes de instalar ferramentas.');
+    const command = await window.farolIA.getSecurityToolInstallCommand(tool.id);
+    const request = await window.farolIA.requestAuthorization({
+      kind: 'terminal-command', target: command,
+      reason: `Instalar ${tool.name} pelo catálogo oficial do Windows Package Manager.`,
+    });
+    const approved = await askTerminalAuthorization({ command, reason: request.reason });
+    if (!approved) {
+      await window.farolIA.decideAuthorization({ id: request.id, decision: 'deny' });
+      status.textContent = 'Instalação cancelada pelo operador.';
+      return;
+    }
+    const grant = await window.farolIA.decideAuthorization({ id: request.id, decision: 'approve' });
+    status.textContent = `Instalando ${tool.name}...`;
+    const result = await window.farolIA.executeTerminal({ command, authorizationId: request.id, approvalToken: grant.approvalToken });
+    if (result.exitCode !== 0) throw new Error(result.stderr || `A instalação terminou com código ${result.exitCode}.`);
+    status.textContent = `${tool.name} instalado. Verificando disponibilidade...`;
+    await refreshAuthorizations();
+    await refreshSecurityTools();
+  } catch (error) {
+    status.textContent = error.message || 'Não foi possível instalar a ferramenta.';
+  }
 });
 byId('new-conversation').addEventListener('click', async () => {
   if (state.messages.length) {

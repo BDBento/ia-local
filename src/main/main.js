@@ -15,6 +15,7 @@ const { createConversationStore } = require('./conversation-store');
 const vscodeIntegration = require('./vscode-integration');
 const { createAssessmentPlan } = require('../shared/security-assessment');
 const bugBountyScanner = require('./bug-bounty-scanner');
+const securityTools = require('./security-tool-orchestrator');
 
 let mainWindow;
 let configStore;
@@ -117,6 +118,8 @@ function createKnowledgeContext(matches) {
 function registerIpc() {
   ipcMain.handle('app:get-initial-state', getState);
   ipcMain.handle('security:create-plan', (_event, input) => createAssessmentPlan(input));
+  ipcMain.handle('security:tools', () => securityTools.listTools());
+  ipcMain.handle('security:tool-install-command', (_event, id) => securityTools.getInstallCommand(id));
   ipcMain.handle('ollama:refresh', getState);
   ipcMain.handle('conversations:list', () => conversationStore.list());
   ipcMain.handle('conversations:storage-path', () => conversationStore.getStoragePath());

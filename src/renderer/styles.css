@@ -272,6 +272,14 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .finding-card.info > span { background: rgba(67, 227, 159, .12); color: var(--green); }
 .finding-card h3 { margin: 10px 0; font-size: 16px; }
 .finding-card p { margin: 8px 0 0; font-size: 12px; line-height: 1.5; }
+.security-tools-panel { margin-top: 18px; }
+.security-tools-list { display: grid; gap: 10px; margin-top: 16px; }
+.security-tool-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #0b1814; }
+.security-tool-card h3 { margin: 7px 0 4px; }
+.security-tool-card p { margin: 0; }
+.security-tool-card small { display: block; margin-top: 7px; color: var(--yellow); line-height: 1.45; }
+.tool-state { display: inline-block; padding: 4px 7px; border-radius: 6px; background: rgba(244, 189, 80, .12); color: var(--yellow); font-size: 9px; font-weight: 900; letter-spacing: .07em; }
+.tool-state.installed { background: rgba(67, 227, 159, .12); color: var(--green); }
 .training-intro h2 { margin: 6px 0; font-size: 25px; }
 .training-form { max-width: 980px; }
 .notice-card { display: grid; gap: 5px; margin-bottom: 22px; padding: 14px 16px; border-left: 3px solid var(--yellow); border-radius: 9px; background: rgba(244, 189, 80, 0.08); }
