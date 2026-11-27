@@ -123,7 +123,7 @@ function registerIpc() {
     securityPlan = null;
     scanApproval = null;
     const plan = createAssessmentPlan(input);
-    if (plan.engagement === 'bug-bounty') bugBountyScanner.normalizePublicTarget(plan.target);
+    if (plan.engagement === 'bug-bounty' && !plan.reviewOnly) bugBountyScanner.normalizePublicTarget(plan.target);
     securityPlan = plan;
     return plan;
   });
@@ -155,6 +155,7 @@ function registerIpc() {
     if (input.kind === 'security-scan' && (plan?.engagement !== 'bug-bounty' || plan.assessmentId !== input.assessmentId)) {
       throw new Error('Gere um plano Bug Bounty válido antes de solicitar autorização.');
     }
+    if (input.kind === 'security-scan' && plan.reviewOnly) throw new Error('Esta metodologia é exclusiva para revisão de materiais.');
     const target = input.kind === 'model-download'
       ? ollama.validateModelName(input?.target)
       : input.kind === 'security-scan'

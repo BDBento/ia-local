@@ -617,14 +617,17 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
     byId('security-plan-depth').textContent = currentSecurityPlan.depthLabel;
     byId('security-plan-excluded').textContent = currentSecurityPlan.excluded;
     byId('security-plan-record').textContent = [plan.assessmentId, new Date(plan.createdAt).toLocaleString('pt-BR'), plan.model, plan.policySnapshot && `Política consultada em ${plan.policySnapshot.consultedAt} · SHA-256 ${plan.policySnapshot.sha256}`].filter(Boolean).join(' · ');
-    byId('security-plan-network').textContent = currentSecurityPlan.externalAccess
+    byId('security-plan-network').textContent = plan.reviewOnly ? 'Revisão de materiais já fornecidos' : currentSecurityPlan.externalAccess
       ? `Permitido sob confirmação · ${currentSecurityPlan.allowedTargets.join(', ')}`
       : 'Bloqueado para esta sessão';
     byId('security-plan-phases').innerHTML = currentSecurityPlan.phases.map((phase, index) => `<div><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(phase)}</strong></div>`).join('');
+    byId('security-plan-evidence').classList.toggle('hidden', !plan.evidenceChecklist.length);
+    byId('security-plan-evidence-list').innerHTML = plan.evidenceChecklist.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
     byId('security-plan-result').classList.remove('hidden');
-    byId('bug-bounty-auto-actions').classList.toggle('hidden', currentSecurityPlan.engagement !== 'bug-bounty');
-    byId('security-tools-panel').classList.toggle('hidden', !['bug-bounty', 'private'].includes(currentSecurityPlan.engagement));
-    if (['bug-bounty', 'private'].includes(currentSecurityPlan.engagement)) await refreshSecurityTools();
+    byId('bug-bounty-auto-actions').classList.toggle('hidden', plan.engagement !== 'bug-bounty' || plan.reviewOnly);
+    const showTools = !plan.reviewOnly && ['bug-bounty', 'private'].includes(plan.engagement);
+    byId('security-tools-panel').classList.toggle('hidden', !showTools);
+    if (showTools) await refreshSecurityTools();
     if (revision !== securityFormRevision) return;
     status.textContent = 'Modo Pentest preparado com escopo validado.';
     byId('security-plan-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -635,7 +638,7 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
 });
 byId('security-open-chat').addEventListener('click', () => {
   if (!currentSecurityPlan) return;
-  if (currentSecurityPlan.externalAccess && state.config?.terminalToolsEnabled !== true) {
+  if (!currentSecurityPlan.reviewOnly && currentSecurityPlan.externalAccess && state.config?.terminalToolsEnabled !== true) {
     byId('security-plan-status').textContent = 'Ative “Terminal para a IA” em Configurações para usar ferramentas externas com confirmação.';
   }
   byId('chat-input').value = currentSecurityPlan.prompt;
@@ -649,7 +652,7 @@ byId('security-copy-prompt').addEventListener('click', async () => {
 });
 byId('security-run-scan').addEventListener('click', async () => {
   const plan = currentSecurityPlan;
-  if (plan?.engagement !== 'bug-bounty') return;
+  if (plan?.engagement !== 'bug-bounty' || plan.reviewOnly) return;
   const button = byId('security-run-scan');
   const status = byId('security-scan-status');
   button.disabled = true;

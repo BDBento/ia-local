@@ -228,7 +228,19 @@
                 <label>Modalidade<select id="security-engagement"><option value="private">Pentest privado</option><option value="bug-bounty">Bug Bounty</option><option value="red-team">Red Team</option></select></label>
                 <label>Alvo autorizado<input id="security-target" type="text" maxlength="253" placeholder="app.exemplo.local ou 192.168.1.0/24" required></label>
                 <label>Responsável pela autorização<input id="security-owner" type="text" maxlength="120" placeholder="Nome ou organização" required></label>
-                <label>Metodologia<select id="security-method"><option value="web">Aplicação web · OWASP WSTG</option><option value="api">API · OWASP API Top 10</option><option value="network">Rede e serviços</option><option value="host">Host local</option></select></label>
+                <label>Metodologia<select id="security-method">
+                  <optgroup label="Avaliação por tipo de ativo">
+                    <option value="web">Aplicação web · OWASP WSTG</option>
+                    <option value="api">API · OWASP API Top 10</option>
+                    <option value="network">Rede e serviços</option>
+                    <option value="host">Host local</option>
+                  </optgroup>
+                  <optgroup label="Revisão de materiais">
+                    <option value="code-review">Revisão de código seguro</option>
+                    <option value="threat-modeling">Modelagem de ameaças</option>
+                    <option value="config-audit">Auditoria de configuração</option>
+                  </optgroup>
+                </select></label>
                 <label>Profundidade<select id="security-depth"><option value="passive">Somente observação</option><option value="standard">Padrão não destrutivo</option></select></label>
               </div>
               <div id="bug-bounty-fields" class="bug-bounty-fields hidden">
@@ -289,6 +301,7 @@
           <article id="security-plan-result" class="panel security-plan-result hidden" aria-live="polite">
             <div class="panel-heading"><div><p class="eyebrow">2 · PLANO DE TRABALHO</p><h2 id="security-plan-title">Plano preparado</h2></div><span id="security-plan-depth" class="info-pill"></span></div>
             <div id="security-plan-phases" class="phase-list"></div>
+            <div id="security-plan-evidence" class="scope-summary hidden"><span>Evidências esperadas</span><ul id="security-plan-evidence-list"></ul></div>
             <div class="scope-summary"><span>Fora do escopo</span><strong id="security-plan-excluded"></strong></div>
             <div class="scope-summary"><span>Acesso externo</span><strong id="security-plan-network"></strong></div>
             <div class="scope-summary"><span>Registro da avaliação</span><strong id="security-plan-record"></strong></div>

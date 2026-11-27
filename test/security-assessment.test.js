@@ -38,6 +38,25 @@ test('gera plano didático sem execução automática', () => {
   assert.match(plan.prompt, /não destrutivos/i);
 });
 
+test('gera etapas e evidências específicas para cada metodologia documental', () => {
+  const methods = [
+    ['code-review', /dependências/, /Arquivo e linha/],
+    ['threat-modeling', /fronteiras de confiança/, /Diagrama/],
+    ['config-audit', /configurações exportadas/, /data de coleta/],
+  ];
+  for (const [method, phase, evidence] of methods) {
+    const input = { method, target: 'app.example.com', owner: 'Equipe', authorized: true };
+    const passive = createAssessmentPlan(input);
+    const standard = createAssessmentPlan({ ...input, depth: 'standard' });
+    assert.equal(passive.reviewOnly, true);
+    assert.match(passive.phases.join(' '), phase);
+    assert.match(passive.evidenceChecklist.join(' '), evidence);
+    assert.match(standard.prompt, evidence);
+    assert.match(standard.prompt, /Não execute ferramentas nem acesse o alvo/);
+    assert.equal(standard.phases.length, passive.phases.length + 1);
+  }
+});
+
 test('bug bounty exige regras oficiais e allowlist externa', () => {
   assert.throws(() => createAssessmentPlan({ target: 'example.com', owner: 'Pesquisador', engagement: 'bug-bounty', authorized: true }), /acesso externo/);
   const input = {
