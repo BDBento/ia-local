@@ -18,6 +18,16 @@ test('contexto maior reserva mais memória', () => {
   assert.ok(contextOverheadGB(16384) > contextOverheadGB(4096));
 });
 
+test('expõe requisitos estimados de RAM e VRAM ajustados ao contexto', () => {
+  const [result] = recommendModels(
+    { ramLimitGB: 16, vramLimitGB: 0, useGpu: false, contextSize: 8192 },
+    [{ id: 'teste', name: 'Teste', minRamGB: 6, recommendedRamGB: 8, fullGpuVramGB: 4, sizeGB: 4 }],
+  );
+  assert.equal(result.requiredRamGB, 6.8);
+  assert.equal(result.recommendedRamGB, 8.8);
+  assert.equal(result.requiredVramGB, 4.8);
+});
+
 test('classifica modelo como GPU quando há VRAM suficiente', () => {
   const [result] = recommendModels(
     { ramLimitGB: 16, vramLimitGB: 12, useGpu: true, contextSize: 4096 },

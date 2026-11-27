@@ -25,10 +25,16 @@ function recommendModels(settings, models = catalog) {
       const requiredRam = model.minRamGB + overhead;
       const recommendedRam = model.recommendedRamGB + overhead;
       const requiredVram = model.fullGpuVramGB + overhead;
+      const resourceRequirements = {
+        requiredRamGB: Number(requiredRam.toFixed(1)),
+        recommendedRamGB: Number(recommendedRam.toFixed(1)),
+        requiredVramGB: Number(requiredVram.toFixed(1)),
+      };
 
       if (ramBudgetGB < requiredRam) {
         return {
           ...model,
+          ...resourceRequirements,
           level: 'unsupported',
           label: 'Não recomendado',
           reason: `Requer cerca de ${requiredRam.toFixed(1)} GB no orçamento configurado.`,
@@ -39,6 +45,7 @@ function recommendModels(settings, models = catalog) {
       if (vramBudgetGB >= requiredVram) {
         return {
           ...model,
+          ...resourceRequirements,
           level: 'gpu',
           label: 'Compatível com a GPU',
           reason: 'Pode permanecer majoritariamente na GPU com este contexto.',
@@ -49,6 +56,7 @@ function recommendModels(settings, models = catalog) {
       if (vramBudgetGB >= Math.max(2, requiredVram * 0.35)) {
         return {
           ...model,
+          ...resourceRequirements,
           level: 'hybrid',
           label: 'Compatível parcialmente',
           reason: 'Usará GPU e memória RAM; a velocidade pode variar.',
@@ -58,6 +66,7 @@ function recommendModels(settings, models = catalog) {
 
       return {
         ...model,
+        ...resourceRequirements,
         level: 'cpu',
         label: 'Compatível somente pela CPU',
         reason: ramBudgetGB >= recommendedRam

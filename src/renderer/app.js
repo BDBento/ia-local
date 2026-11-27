@@ -89,9 +89,14 @@ function renderModels() {
     <article class="model-card" role="button" tabindex="0" data-select-model="${escapeHtml(model.id)}" aria-label="Selecionar ${escapeHtml(model.name)} para baixar">
       <h3>${escapeHtml(model.name)}</h3>
       <p>${escapeHtml(model.purpose)}</p>
-      <div class="model-meta"><span>${model.sizeGB} GB no disco</span><span>${model.recommendedRamGB} GB RAM recomendada</span></div>
+      <div class="model-meta"><span>${model.sizeGB} GB no disco</span><span>Contexto: ${Number(state.config.contextSize).toLocaleString('pt-BR')} tokens</span></div>
       <span class="compatibility ${model.level}">${escapeHtml(model.label)}</span>
       <small class="reason">${escapeHtml(model.reason)}</small>
+      <div class="model-requirements">
+        <div><strong>RAM</strong><span>Mínimo estimado: ${model.requiredRamGB} GB · recomendado: ${model.recommendedRamGB} GB</span><small>Abaixo do mínimo, pode não carregar ou ficar muito lento por uso de memória virtual.</small></div>
+        <div><strong>GPU</strong><span>Opcional · ${model.requiredVramGB} GB de VRAM para execução completa na GPU</span><small>Sem VRAM suficiente, usa GPU parcialmente ou CPU; a resposta fica mais lenta.</small></div>
+        <div><strong>CPU</strong><span>CPU de 64 bits · sem mínimo fixo de núcleos</span><small>Executa sem GPU dedicada; mais núcleos e velocidade melhoram o desempenho.</small></div>
+      </div>
       <small class="repository-name">Repositório: ${escapeHtml(model.id)}</small>
     </article>
   `).join('');

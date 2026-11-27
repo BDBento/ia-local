@@ -168,6 +168,10 @@ select:focus, input:focus, textarea:focus { border-color: var(--green); }
 .compatibility.cpu { background: rgba(112, 166, 232, 0.14); color: #8fbef6; }
 .compatibility.unsupported { background: rgba(255, 107, 103, 0.13); color: var(--red); }
 .reason { display: block; margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.model-requirements { display: grid; gap: 10px; margin-top: 15px; }
+.model-requirements div { display: grid; gap: 3px; }
+.model-requirements strong { font-size: 12px; }
+.model-requirements span, .model-requirements small { color: var(--muted); font-size: 11px; line-height: 1.45; }
 .repository-name { display: block; margin-top: 10px; color: var(--green); font-family: Consolas, monospace; font-size: 11px; }
 
 .settings-grid { display: grid; gap: 18px; max-width: 980px; }
