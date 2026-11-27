@@ -116,8 +116,17 @@ function createKnowledgeContext(matches) {
 }
 
 function registerIpc() {
+  let securityPlan;
+  let scanApproval;
   ipcMain.handle('app:get-initial-state', getState);
-  ipcMain.handle('security:create-plan', (_event, input) => createAssessmentPlan(input));
+  ipcMain.handle('security:create-plan', (_event, input) => {
+    securityPlan = null;
+    scanApproval = null;
+    const plan = createAssessmentPlan(input);
+    if (plan.engagement === 'bug-bounty') bugBountyScanner.normalizePublicTarget(plan.target);
+    securityPlan = plan;
+    return plan;
+  });
   ipcMain.handle('security:tools', () => securityTools.listTools());
   ipcMain.handle('security:tool-install-command', (_event, id) => securityTools.getInstallCommand(id));
   ipcMain.handle('ollama:refresh', getState);
@@ -137,44 +146,56 @@ function registerIpc() {
   });
   ipcMain.handle('guardian:status', networkGuardian.getStatus);
   ipcMain.handle('guardian:authorizations', () => authorizationManager.list());
-  ipcMain.handle('guardian:authorization-request', (_event, input) => {
+  ipcMain.handle('guardian:authorization-request', async (_event, input) => {
     if (!['model-download', 'terminal-command', 'security-scan', 'security-tool-install'].includes(input?.kind)) throw new Error('Tipo de autorização não permitido.');
     if (['terminal-command', 'security-tool-install'].includes(input.kind) && !currentConfig.terminalToolsEnabled) {
       throw new Error('As ferramentas de terminal estão desativadas nas configurações.');
     }
+    const plan = securityPlan;
+    if (input.kind === 'security-scan' && (plan?.engagement !== 'bug-bounty' || plan.assessmentId !== input.assessmentId)) {
+      throw new Error('Gere um plano Bug Bounty válido antes de solicitar autorização.');
+    }
     const target = input.kind === 'model-download'
       ? ollama.validateModelName(input?.target)
       : input.kind === 'security-scan'
-        ? bugBountyScanner.normalizePublicTarget(input?.target)
+        ? bugBountyScanner.normalizePublicTarget(plan.target)
         : input.kind === 'security-tool-install'
           ? securityTools.getInstallCommand(input?.toolId)
           : terminal.validateCommand(input?.target);
-    return authorizationManager.request({
+    const authorization = await authorizationManager.request({
       kind: input.kind,
       target,
       reason: input.kind === 'model-download'
         ? 'Baixar um modelo por meio do Ollama requer acesso à internet.'
         : input.kind === 'security-scan'
-          ? 'Executar auditoria HTTP não destrutiva no alvo autorizado.'
+          ? `Consultar cabeçalhos com uma requisição HEAD. Avaliação ${plan.assessmentId}.`
           : input.kind === 'security-tool-install'
             ? `Instalar ${securityTools.getTool(input?.toolId).name} pelo catálogo oficial do Windows Package Manager.`
             : String(input?.reason || 'A IA solicitou a execução deste comando local.').slice(0, 300),
     });
+    if (input.kind === 'security-scan' && plan === securityPlan) scanApproval = { id: authorization.id, plan };
+    return authorization;
   });
   ipcMain.handle('guardian:authorization-decision', (_event, input) => {
     return authorizationManager.decide(input?.id, input?.decision);
   });
   ipcMain.handle('security:scan', async (_event, input) => runExclusive(async () => {
-    const target = bugBountyScanner.normalizePublicTarget(input?.target);
+    const plan = securityPlan;
+    if (!plan || scanApproval?.plan !== plan || scanApproval.id !== input?.authorizationId || plan.assessmentId !== input?.assessmentId) {
+      throw new Error('Solicite autorização para o plano atual antes de consultar o alvo.');
+    }
+    const target = bugBountyScanner.normalizePublicTarget(plan.target);
     await authorizationManager.consume({
       id: input?.authorizationId,
       approvalToken: input?.approvalToken,
       kind: 'security-scan',
       target,
     });
+    if (plan !== securityPlan || scanApproval?.id !== input.authorizationId) throw new Error('O plano ou a autorização mudou durante a aprovação.');
+    scanApproval = null;
     sendNetworkActivity(true, 'Auditoria Bug Bounty');
     try {
-      return await bugBountyScanner.scanTarget({ target, allowedTargets: input?.allowedTargets, programPolicy: input?.programPolicy });
+      return await bugBountyScanner.scanTarget(plan);
     } finally {
       sendNetworkActivity(false);
     }

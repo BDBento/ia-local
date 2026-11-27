@@ -2,12 +2,28 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createAssessmentPlan, validateTarget } = require('../src/shared/security-assessment');
+const { createAssessmentPlan, isPrivateLabTarget, matchesAllowedTarget, validateScope, validateTarget } = require('../src/shared/security-assessment');
 
 test('aceita apenas alvos bem formados', () => {
   assert.equal(validateTarget('192.168.1.0/24'), '192.168.1.0/24');
   assert.equal(validateTarget('https://app.exemplo.local/login'), 'https://app.exemplo.local/login');
-  assert.throws(() => validateTarget('host; Remove-Item *'), /hostname, IPv4, CIDR ou URL/);
+  assert.throws(() => validateTarget('host; Remove-Item *'), /hostname, IPv4, IPv6, CIDR ou URL/);
+  assert.throws(() => validateTarget('999.999.999.999'), /hostname/);
+  assert.throws(() => validateTarget('192.168.1.17/24'), /canônico/);
+  assert.equal(validateTarget('HTTPS://EXAMPLE.COM./MinhaRota'), 'https://example.com/MinhaRota');
+  assert.equal(validateTarget('[0:0:0:0:0:0:0:1]'), '::1');
+  assert.equal(isPrivateLabTarget('10.0.0.0/7'), false);
+  assert.equal(isPrivateLabTarget('10.0.0.0/8'), true);
+});
+
+test('aplica limites de origem, porta e caminho sem ampliar o escopo', () => {
+  const scope = validateScope('EXAMPLE.COM.,example.com,https://api.example.com:8443/V1,192.168.1.0/24');
+  assert.equal(scope.length, 3);
+  assert.equal(matchesAllowedTarget('https://example.com:8443', scope), false);
+  assert.equal(matchesAllowedTarget('https://api.example.com:8443/V1/health', scope), true);
+  assert.equal(matchesAllowedTarget('https://api.example.com:8443/V10', scope), false);
+  assert.equal(matchesAllowedTarget('https://api.example.com:8443/v1', scope), false);
+  assert.equal(matchesAllowedTarget('192.168.1.12', scope), true);
 });
 
 test('exige confirmação de autorização', () => {
@@ -24,13 +40,21 @@ test('gera plano didático sem execução automática', () => {
 
 test('bug bounty exige regras oficiais e allowlist externa', () => {
   assert.throws(() => createAssessmentPlan({ target: 'example.com', owner: 'Pesquisador', engagement: 'bug-bounty', authorized: true }), /acesso externo/);
-  const plan = createAssessmentPlan({
+  const input = {
     target: 'example.com', owner: 'Pesquisador', method: 'web', depth: 'standard', authorized: true,
     engagement: 'bug-bounty', externalAccess: true, programUrl: 'https://hackerone.com/example',
-    allowedTargets: '*.example.com, api.example.com',
-  });
-  assert.deepEqual(plan.allowedTargets, ['*.example.com', 'api.example.com']);
-  assert.match(plan.prompt, /exclusivamente para: \*\.example\.com, api\.example\.com/);
+    allowedTargets: '*.example.com, example.com', stopConditions: 'Interromper diante de dados reais',
+    programPolicy: 'Escopo aprovado pelo programa', policyConsultedAt: '2026-01-01', policyConfirmed: true,
+  };
+  assert.throws(() => createAssessmentPlan({ ...input, programPolicy: '' }), /política/);
+  assert.throws(() => createAssessmentPlan({ ...input, allowedTargets: '*.example.com' }), /allowlist/);
+  assert.throws(() => createAssessmentPlan({ ...input, depth: 'outro' }), /opção inválida/);
+  assert.throws(() => createAssessmentPlan({ ...input, stopConditions: '' }), /condições/);
+  assert.throws(() => createAssessmentPlan({ ...input, policyConsultedAt: '2026-02-30' }), /data válida/);
+  const plan = createAssessmentPlan(input);
+  assert.match(plan.policySnapshot.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(plan.limits.maxRequests, 1);
+  assert.deepEqual(JSON.parse(plan.prompt.split('\n').at(-1)).allowedTargets, ['*.example.com', 'example.com']);
 });
 
 test('red team exige regras de engajamento e condições de parada', () => {

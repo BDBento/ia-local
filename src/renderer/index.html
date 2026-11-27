@@ -235,14 +235,12 @@
                 <label class="full-field">Página oficial do programa
                   <input id="security-program-url" type="url" maxlength="500" placeholder="https://plataforma.example/programa">
                 </label>
-                <label class="full-field">Allowlist externa
-                  <textarea id="security-allowed-targets" rows="3" maxlength="4000" placeholder="*.example.com, api.example.com"></textarea>
-                  <small>Somente estes destinos poderão constar no plano. Separe por vírgula ou linha.</small>
-                </label>
                 <label class="full-field">Política e exclusões do programa
                   <textarea id="security-program-policy" rows="7" maxlength="100000" placeholder="Cole aqui as regras, o escopo e as vulnerabilidades não aceitas pelo programa"></textarea>
-                  <small>O Farol usa este texto para ocultar achados explicitamente não elegíveis. A decisão final ainda exige revisão humana.</small>
+                  <small>O Farol sinaliza exclusões reconhecidas no texto. Revise as regras antes de preparar um relatório.</small>
                 </label>
+                <label>Data da consulta<input id="security-policy-date" type="date"></label>
+                <label class="scope-consent"><input id="security-policy-confirmed" type="checkbox"><span>Consultei e li as regras vigentes do programa.</span></label>
               </div>
               <div id="red-team-fields" class="red-team-fields hidden">
                 <p class="eyebrow">PLANO DE OPERAÇÃO RED TEAM</p>
@@ -254,7 +252,6 @@
                 </label>
                 <div class="field-grid">
                   <label>Janela operacional<input id="security-operation-window" type="text" maxlength="200" placeholder="Ex.: seg–sex, 09h–17h BRT"></label>
-                  <label>Condições de parada<input id="security-stop-conditions" type="text" maxlength="1000" placeholder="Ex.: impacto, dado real ou alerta crítico"></label>
                   <label>Intensidade<select id="security-intensity"><option value="standard">Controlada</option><option value="aggressive">Agressiva autorizada</option><option value="destructive-lab">Destrutiva · somente laboratório</option></select></label>
                 </div>
                 <div id="destructive-lab-fields" class="destructive-lab-fields hidden">
@@ -270,6 +267,10 @@
               </label>
               <label class="scope-consent"><input id="security-authorized" type="checkbox" required><span><strong>Confirmo que sou proprietário ou tenho autorização formal</strong><small>Testes em sistemas de terceiros sem permissão não são aceitos.</small></span></label>
               <label class="scope-consent"><input id="security-external-access" type="checkbox"><span><strong>Autorizar acesso externo nesta sessão</strong><small>O acesso ocorrerá somente por comandos exibidos e aprovados individualmente. O chat permanece local.</small></span></label>
+              <div id="security-external-scope" class="hidden">
+                <label class="full-field">Allowlist externa<textarea id="security-allowed-targets" rows="3" maxlength="4000" placeholder="*.example.com, https://api.example.com/v1"></textarea><small>Separe os destinos por vírgula ou linha. Para portas não padrão, inclua a URL com a porta aprovada.</small></label>
+              </div>
+              <label id="security-stop-field" class="full-field hidden">Condições de parada<input id="security-stop-conditions" type="text" maxlength="1000" placeholder="Ex.: impacto, dado real ou alerta crítico"></label>
               <div class="form-actions"><span id="security-plan-status" role="status"></span><button class="primary-button" type="submit">Ativar e gerar plano</button></div>
             </form>
 
@@ -290,9 +291,10 @@
             <div id="security-plan-phases" class="phase-list"></div>
             <div class="scope-summary"><span>Fora do escopo</span><strong id="security-plan-excluded"></strong></div>
             <div class="scope-summary"><span>Acesso externo</span><strong id="security-plan-network"></strong></div>
+            <div class="scope-summary"><span>Registro da avaliação</span><strong id="security-plan-record"></strong></div>
             <div id="bug-bounty-auto-actions" class="bug-bounty-auto-actions hidden">
-              <div><strong>Auditoria automática para iniciantes</strong><small>Verifica HTTPS, cabeçalhos, cookies e exposição básica sem explorar vulnerabilidades.</small></div>
-              <button id="security-run-scan" class="primary-button" type="button">Buscar bugs automaticamente</button>
+              <div><strong>Consulta de cabeçalhos HTTPS</strong><small>Uma requisição HEAD, até 12 segundos, sem seguir redirecionamentos.</small></div>
+              <button id="security-run-scan" class="primary-button" type="button">Revisar cabeçalhos</button>
             </div>
             <div class="form-actions"><button id="security-copy-prompt" class="secondary-button" type="button">Copiar instruções</button><button id="security-open-chat" class="primary-button" type="button">Iniciar sessão didática</button></div>
           </article>

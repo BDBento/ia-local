@@ -247,7 +247,7 @@ function askNetworkAuthorization(authorization) {
   const isScan = authorization.kind === 'security-scan';
   byId('network-auth-operation').textContent = isScan ? 'Auditoria Bug Bounty' : 'Baixar modelo';
   byId('network-auth-warning').textContent = isScan
-    ? 'Será feita uma consulta HTTP não destrutiva somente ao alvo exibido. O farol ficará vermelho durante a operação.'
+    ? 'Aprove somente se a política permitir uma requisição HEAD para o destino exibido e se nenhuma exclusão se aplicar. O farol ficará vermelho durante a consulta.'
     : 'O download será feito pelo Ollama. O farol ficará vermelho durante a operação.';
   dialog.returnValue = 'deny';
   dialog.showModal();
@@ -532,35 +532,61 @@ async function removeModel(model) {
 }
 
 document.querySelectorAll('.nav-button').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
-byId('security-engagement').addEventListener('change', () => {
+function updateSecurityFields() {
   const isBugBounty = byId('security-engagement').value === 'bug-bounty';
   const isRedTeam = byId('security-engagement').value === 'red-team';
+  const external = byId('security-external-access').checked;
   byId('bug-bounty-fields').classList.toggle('hidden', !isBugBounty);
   byId('red-team-fields').classList.toggle('hidden', !isRedTeam);
   byId('security-program-url').required = isBugBounty;
-  byId('security-allowed-targets').required = isBugBounty;
+  byId('security-program-policy').required = isBugBounty;
+  byId('security-policy-date').required = isBugBounty;
+  byId('security-policy-confirmed').required = isBugBounty;
+  byId('security-external-access').required = isBugBounty;
+  byId('security-external-scope').classList.toggle('hidden', !external);
+  byId('security-allowed-targets').required = external;
   byId('security-objective').required = isRedTeam;
   byId('security-roe').required = isRedTeam;
   byId('security-operation-window').required = isRedTeam;
-  byId('security-stop-conditions').required = isRedTeam;
-  if (isBugBounty) byId('security-external-access').checked = true;
-});
+  byId('security-stop-field').classList.toggle('hidden', !isRedTeam && !external);
+  byId('security-stop-conditions').required = isRedTeam || external;
+}
+byId('security-engagement').addEventListener('change', updateSecurityFields);
+byId('security-external-access').addEventListener('change', updateSecurityFields);
 byId('security-intensity').addEventListener('change', () => {
   const destructive = byId('security-intensity').value === 'destructive-lab';
   byId('destructive-lab-fields').classList.toggle('hidden', !destructive);
   byId('security-recovery-plan').required = destructive;
   byId('security-destructive-confirmation').required = destructive;
   if (destructive) byId('security-external-access').checked = false;
+  updateSecurityFields();
   byId('red-team-safety-copy').textContent = destructive
     ? 'Ações destrutivas ficam restritas aos ativos sintéticos do laboratório isolado, com recuperação testada e confirmação por comando.'
     : 'Coleta, credenciais e exfiltração usam dados sintéticos. Persistência oculta e indisponibilidade não são permitidas.';
 });
+let securityFormRevision = 0;
+function clearSecurityPlan() {
+  currentSecurityPlan = null;
+  byId('security-plan-result').classList.add('hidden');
+  byId('security-scan-result').classList.add('hidden');
+  byId('security-tools-panel').classList.add('hidden');
+}
+byId('security-plan-form').addEventListener('input', (event) => {
+  securityFormRevision++;
+  if (['security-program-url', 'security-program-policy', 'security-policy-date'].includes(event.target.id)) {
+    byId('security-policy-confirmed').checked = false;
+  }
+  clearSecurityPlan();
+  byId('security-plan-status').textContent = '';
+});
 byId('security-plan-form').addEventListener('submit', async (event) => {
   event.preventDefault();
+  const revision = ++securityFormRevision;
+  clearSecurityPlan();
   const status = byId('security-plan-status');
   status.textContent = 'Validando escopo...';
   try {
-    currentSecurityPlan = await window.farolIA.createSecurityPlan({
+    const plan = await window.farolIA.createSecurityPlan({
       target: byId('security-target').value,
       owner: byId('security-owner').value,
       method: byId('security-method').value,
@@ -568,6 +594,9 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
       engagement: byId('security-engagement').value,
       programUrl: byId('security-program-url').value,
       programPolicy: byId('security-program-policy').value,
+      policyConsultedAt: byId('security-policy-date').value,
+      policyConfirmed: byId('security-policy-confirmed').checked,
+      model: byId('chat-model').value,
       allowedTargets: byId('security-allowed-targets').value,
       externalAccess: byId('security-external-access').checked,
       objective: byId('security-objective').value,
@@ -582,9 +611,12 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
       excluded: byId('security-excluded').value,
       authorized: byId('security-authorized').checked,
     });
+    if (revision !== securityFormRevision) return;
+    currentSecurityPlan = plan;
     byId('security-plan-title').textContent = `${currentSecurityPlan.methodLabel} · ${currentSecurityPlan.target}`;
     byId('security-plan-depth').textContent = currentSecurityPlan.depthLabel;
     byId('security-plan-excluded').textContent = currentSecurityPlan.excluded;
+    byId('security-plan-record').textContent = [plan.assessmentId, new Date(plan.createdAt).toLocaleString('pt-BR'), plan.model, plan.policySnapshot && `Política consultada em ${plan.policySnapshot.consultedAt} · SHA-256 ${plan.policySnapshot.sha256}`].filter(Boolean).join(' · ');
     byId('security-plan-network').textContent = currentSecurityPlan.externalAccess
       ? `Permitido sob confirmação · ${currentSecurityPlan.allowedTargets.join(', ')}`
       : 'Bloqueado para esta sessão';
@@ -593,10 +625,11 @@ byId('security-plan-form').addEventListener('submit', async (event) => {
     byId('bug-bounty-auto-actions').classList.toggle('hidden', currentSecurityPlan.engagement !== 'bug-bounty');
     byId('security-tools-panel').classList.toggle('hidden', !['bug-bounty', 'private'].includes(currentSecurityPlan.engagement));
     if (['bug-bounty', 'private'].includes(currentSecurityPlan.engagement)) await refreshSecurityTools();
+    if (revision !== securityFormRevision) return;
     status.textContent = 'Modo Pentest preparado com escopo validado.';
     byId('security-plan-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
-    currentSecurityPlan = null;
+    if (revision !== securityFormRevision) return;
     status.textContent = error.message || 'Não foi possível criar o plano.';
   }
 });
@@ -615,54 +648,87 @@ byId('security-copy-prompt').addEventListener('click', async () => {
   byId('security-plan-status').textContent = 'Instruções copiadas.';
 });
 byId('security-run-scan').addEventListener('click', async () => {
-  if (!currentSecurityPlan || currentSecurityPlan.engagement !== 'bug-bounty') return;
+  const plan = currentSecurityPlan;
+  if (plan?.engagement !== 'bug-bounty') return;
   const button = byId('security-run-scan');
   const status = byId('security-scan-status');
   button.disabled = true;
+  plan.scanResult = null;
+  byId('security-findings').replaceChildren();
+  byId('security-scan-summary').textContent = '';
+  byId('security-copy-report').disabled = true;
   byId('security-scan-result').classList.remove('hidden');
   status.textContent = 'Preparando autorização...';
   try {
-    const request = await window.farolIA.requestAuthorization({ kind: 'security-scan', target: currentSecurityPlan.target });
+    const request = await window.farolIA.requestAuthorization({ kind: 'security-scan', assessmentId: plan.assessmentId });
     const approved = await askNetworkAuthorization(request);
-    if (!approved) {
+    if (!approved || plan !== currentSecurityPlan) {
       await window.farolIA.decideAuthorization({ id: request.id, decision: 'deny' });
       status.textContent = 'Auditoria cancelada pelo operador.';
       return;
     }
     const grant = await window.farolIA.decideAuthorization({ id: request.id, decision: 'approve' });
+    if (plan !== currentSecurityPlan) return;
     status.textContent = 'Consultando o alvo autorizado com baixo impacto...';
     const result = await window.farolIA.runSecurityScan({
-      target: currentSecurityPlan.target,
-      allowedTargets: currentSecurityPlan.allowedTargets,
-      programPolicy: currentSecurityPlan.programPolicy,
+      assessmentId: plan.assessmentId,
       authorizationId: request.id,
       approvalToken: grant.approvalToken,
     });
-    currentSecurityPlan.scanResult = result;
-    const candidates = result.findings.filter((item) => item.eligibility !== 'excluded');
+    if (plan !== currentSecurityPlan) return;
+    plan.scanResult = result;
     const excluded = result.findings.filter((item) => item.eligibility === 'excluded');
-    const counts = candidates.reduce((map, item) => ({ ...map, [item.severity]: (map[item.severity] || 0) + 1 }), {});
-    byId('security-scan-summary').textContent = `${candidates.length} candidato(s) · ${excluded.length} excluído(s)`;
-    byId('security-scan-summary').title = `Médio: ${counts.medium || 0}; baixo: ${counts.low || 0}; informativo: ${counts.info || 0}`;
-    status.textContent = `Verificação concluída em ${new Date(result.checkedAt).toLocaleString('pt-BR')}. Confirme manualmente antes de reportar.`;
-    byId('security-findings').innerHTML = result.findings.length ? result.findings.map((finding) => `
-      <article class="finding-card ${escapeHtml(finding.severity)} ${escapeHtml(finding.eligibility || 'unknown')}">
-        <span>${escapeHtml(finding.eligibility === 'excluded' ? 'NÃO ELEGÍVEL' : finding.severity)}</span><h3>${escapeHtml(finding.title)}</h3>
+    byId('security-scan-summary').textContent = `${result.findings.length - excluded.length} observação(ões) · ${excluded.length} excluído(s)`;
+    status.textContent = result.stopped || `Verificação concluída em ${new Date(result.checkedAt).toLocaleString('pt-BR')}. Confirme manualmente antes de reportar.`;
+    byId('security-findings').innerHTML = result.findings.length ? result.findings.map((finding, index) => `
+      <article class="finding-card ${escapeHtml(finding.severity)} ${escapeHtml(finding.eligibility)}" data-finding-index="${index}">
+        <span data-review-status>${finding.eligibility === 'excluded' ? 'NÃO ELEGÍVEL' : 'Observação automática'}</span><h3>${escapeHtml(finding.title)}</h3>
         <p><strong>Por que apareceu:</strong> ${escapeHtml(finding.evidence)}</p>
         <p><strong>Como corrigir:</strong> ${escapeHtml(finding.recommendation)}</p>
         <p><strong>Política:</strong> ${escapeHtml(finding.eligibilityReason || 'Revisão manual necessária.')}</p>
+        ${finding.eligibility === 'excluded' ? '' : `<details><summary>Revisão manual</summary>
+          <label><input type="checkbox" data-reviewed> Confirmei a evidência, o escopo e a elegibilidade pela política.</label>
+          <label>Impacto confirmado<textarea data-impact maxlength="1000" rows="2"></textarea></label>
+          <label>Referência à evidência revisada<textarea data-evidence maxlength="1000" rows="2"></textarea></label>
+          <label><input type="checkbox" data-ready disabled> Revisei o relatório e confirmei que atende aos requisitos de evidência e reprodução do programa.</label>
+        </details>`}
       </article>`).join('') : '<div class="installed-empty">Nenhum achado básico foi identificado.</div>';
+    byId('security-copy-report').disabled = false;
     await refreshAuthorizations();
   } catch (error) {
-    status.textContent = error.message || 'Não foi possível concluir a auditoria.';
+    if (plan === currentSecurityPlan) status.textContent = error.message || 'Não foi possível concluir a auditoria.';
   } finally {
     button.disabled = false;
   }
 });
+function getFindingReview(card) {
+  const reviewed = card.querySelector('[data-reviewed]').checked;
+  const impact = card.querySelector('[data-impact]').value.trim();
+  const evidence = card.querySelector('[data-evidence]').value.trim();
+  const ready = card.querySelector('[data-ready]');
+  ready.disabled = !reviewed || !impact || !evidence;
+  if (ready.disabled) ready.checked = false;
+  const status = !reviewed ? 'Observação automática' : !impact ? 'Impacto pendente' : ready.checked ? 'Pronto para reportar' : 'Candidato revisado';
+  return { status, reviewed, impact, evidence };
+}
+byId('security-findings').addEventListener('input', (event) => {
+  const card = event.target.closest('[data-finding-index]');
+  if (!card?.querySelector('[data-reviewed]')) return;
+  if (!event.target.matches('[data-ready]')) card.querySelector('[data-ready]').checked = false;
+  card.querySelector('[data-review-status]').textContent = getFindingReview(card).status;
+});
 byId('security-copy-report').addEventListener('click', async () => {
-  const report = currentSecurityPlan?.scanResult?.report;
-  if (!report) return;
-  await navigator.clipboard.writeText(report);
+  const result = currentSecurityPlan?.scanResult;
+  if (!result) return;
+  const reviews = [...byId('security-findings').querySelectorAll('[data-finding-index]')].flatMap((card) => {
+    if (!card.querySelector('[data-reviewed]')) return [];
+    const review = getFindingReview(card);
+    if (!review.reviewed) return [];
+    const finding = result.findings[Number(card.dataset.findingIndex)];
+    const quote = (value) => value.split(/\r?\n/).map((line) => `> ${line}`).join('\n');
+    return [`### ${finding.title}\n\n${review.status}\n\nImpacto\n\n${quote(review.impact)}\n\nReferência à evidência\n\n${quote(review.evidence)}`];
+  });
+  await navigator.clipboard.writeText(reviews.length ? `${result.report}\n\n## Revisão declarada pelo operador\n\n${reviews.join('\n\n')}` : result.report);
   byId('security-scan-status').textContent = 'Rascunho copiado. Valide o achado e adapte ao formato do programa antes de enviar.';
 });
 byId('security-refresh-tools').addEventListener('click', refreshSecurityTools);

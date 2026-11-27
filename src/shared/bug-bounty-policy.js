@@ -17,8 +17,8 @@ function analyzePolicy(text) {
     classify(finding) {
       const rule = matchedRules.find((item) => item.ids?.includes(finding.id) || item.prefixes?.some((prefix) => finding.id.startsWith(prefix)));
       return rule
-        ? { ...finding, eligibility: 'excluded', eligibilityReason: rule.reason }
-        : { ...finding, eligibility: policyText ? 'review' : 'unknown', eligibilityReason: policyText ? 'Não foi encontrada exclusão explícita; ainda exige validação manual e impacto real.' : 'Política do programa não fornecida.' };
+        ? { ...finding, eligibility: 'excluded', reviewStatus: 'excluded', eligibilityReason: rule.reason }
+        : { ...finding, eligibility: policyText ? 'review' : 'unknown', reviewStatus: 'observation', eligibilityReason: policyText ? 'Confirme manualmente as regras do programa, a evidência e o impacto.' : 'Política do programa não fornecida.' };
     },
   };
 }
