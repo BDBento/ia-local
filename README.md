@@ -49,6 +49,14 @@ Modelos maiores precisam de mais memória. A classificação exibida pelo aplica
 
 ## Instalação
 
+### Executável para Windows
+
+Com as dependências do projeto instaladas, gere a versão portátil com `npm.cmd run build:win`. Abra `Farol IA Local.exe` com dois cliques na pasta criada em `dist`. Mantenha toda a pasta junto do executável. Você pode criar um atalho para ele na Área de Trabalho.
+
+Para executar a versão portátil, basta ter o Ollama instalado e em execução para usar os modelos locais. O Node.js é necessário para gerar o pacote. Para incluir o Guardião no pacote, compile-o em modo Release antes de gerar o executável.
+
+### Executar em desenvolvimento
+
 ```powershell
 git clone <URL-DO-REPOSITORIO>
 cd farol-ia-local

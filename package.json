@@ -8,6 +8,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
+    "build:win": "node scripts/build-windows.js",
     "test": "node --test",
     "check": "node --check src/main/main.js && node --check src/main/preload.js && node --check src/main/terminal.js && node --check src/main/conversation-store.js && node --check src/main/vscode-integration.js && node --check src/main/network-guardian.js && node --check src/main/network-authorization.js && node --check src/main/knowledge-base.js && node --check src/main/pdf-extractor.js && node --check src/main/pdf-parser.js && node --check src/main/pdf-parser-worker.js && node --check src/renderer/app.js && node --check src/shared/recommender.js"
   },
